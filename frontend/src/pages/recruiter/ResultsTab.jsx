@@ -3,7 +3,7 @@ import { Trophy, Send, Upload, Award, CheckCircle2, ExternalLink } from "lucide-
 import { Card, Badge, Button, Input } from "../../components/ui/primitives.jsx";
 import { Loading } from "../../components/ui/states.jsx";
 import { useAsync } from "../../hooks/useAsync.js";
-import { api, withFallback } from "../../lib/api.js";
+import { api, apiUrl, withFallback } from "../../lib/api.js";
 import "../../styles/recruiter-operations-pages.css";
 
 const OUTCOME_TONE = { selected: "teal", shortlist: "brand", fail: "rose", pass: "brand" };
@@ -162,7 +162,7 @@ export default function ResultsTab({ id }) {
                     <td className="px-5 py-3 text-right">
                       {offers[r.candidate_id] ? (
                         <a
-                          href={`/api/verify/offer/${offers[r.candidate_id].verify_id}`}
+                          href={apiUrl(`/verify/offer/${offers[r.candidate_id].verify_id}`)}
                           target="_blank" rel="noreferrer"
                           className="inline-flex items-center gap-1.5 text-sm text-brand-600 hover:underline"
                         >

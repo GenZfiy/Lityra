@@ -5,6 +5,12 @@
 const ACCESS_KEY = "lare_access";
 const REFRESH_KEY = "lare_refresh";
 
+// In production set VITE_API_BASE_URL to the Render gateway origin (for
+// example https://lityra-api.onrender.com). Keeping /api as the default
+// preserves the Vite development proxy and same-origin deployments.
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
+export const apiUrl = (path) => `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+
 export const tokens = {
   get access() {
     return localStorage.getItem(ACCESS_KEY);
@@ -51,7 +57,7 @@ async function refreshAccess() {
   if (!rt) return "expired";
   _refreshing = (async () => {
     try {
-      const res = await fetch("/api/auth/v1/refresh", {
+      const res = await fetch(apiUrl("/auth/v1/refresh"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token: rt }),
@@ -83,7 +89,7 @@ export function sseStream(path, onData) {
     try {
       const headers = { Accept: "text/event-stream" };
       if (tokens.access) headers.Authorization = `Bearer ${tokens.access}`;
-      const res = await fetch(`/api${path}`, { headers, signal: ctrl.signal });
+      const res = await fetch(apiUrl(path), { headers, signal: ctrl.signal });
       if (!res.ok || !res.body) return;
       const reader = res.body.getReader();
       const dec = new TextDecoder();
@@ -110,7 +116,7 @@ async function request(path, opts = {}) {
   if (auth && tokens.access) headers.Authorization = `Bearer ${tokens.access}`;
   if (accessGrant.value) headers["X-Access-Grant"] = accessGrant.value;
 
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(apiUrl(path), {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -567,7 +573,7 @@ export const api = {
   completeUpload: (fileId) => request(`/files/v1/${fileId}/complete`, { method: "POST" }),
   // raw PUT of bytes to the pre-signed token URL
   uploadBytes: (token, bytes, mime) =>
-    fetch(`/api/files/v1/upload/${token}`, { method: "PUT", headers: { "Content-Type": mime }, body: bytes }),
+    fetch(apiUrl(`/files/v1/upload/${token}`), { method: "PUT", headers: { "Content-Type": mime }, body: bytes }),
   setResume: (resume_file_id) => request("/drive/v1/candidate/resume", { method: "POST", body: { resume_file_id } }),
 };
 

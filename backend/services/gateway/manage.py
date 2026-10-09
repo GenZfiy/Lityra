@@ -11,7 +11,10 @@ from app.factory import build_app  # noqa: E402
 
 def cmd_serve():
     from lare_common.serve import serve
-    serve(build_app(), host="127.0.0.1", port=int(os.getenv("PORT", "8000")))
+    # Render routes traffic to the container network interface, so the public
+    # gateway must bind to 0.0.0.0. Internal services can keep loopback binds.
+    host = os.getenv("HOST", "0.0.0.0" if os.getenv("APP_ENV") == "production" else "127.0.0.1")
+    serve(build_app(), host=host, port=int(os.getenv("PORT", "8000")))
 
 
 def cmd_run():

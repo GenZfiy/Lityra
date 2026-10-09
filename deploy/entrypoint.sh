@@ -31,7 +31,7 @@ if [[ "${SKIP_INIT:-0}" != "1" ]]; then
     ( cd "$ROOT/services/$dir" \
       && DB_SCHEMA="$local_schema" SERVICE_NAME="$name" PORT="$port" \
          python manage.py init-db ) \
-      || echo "[entrypoint] WARN: init-db failed for $name (continuing)"
+      || { echo "[entrypoint] ERROR: init-db failed for $name" >&2; exit 1; }
   done < <(tr -d '\r' < "$REGISTRY")
 fi
 
@@ -65,6 +65,9 @@ while read -r name dir port; do
   extra_env=""
   if [[ "$name" != "gateway" ]]; then
     extra_env=",DB_SCHEMA=\"$(schema_for "$name")\""
+  else
+    port="${PORT:-$port}"
+    extra_env=',HOST="0.0.0.0"'
   fi
   cat >> "$CONF" <<PROG
 
