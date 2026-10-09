@@ -20,7 +20,7 @@ def cmd_init_db():
     db = Database(cfg.DATABASE_URL, echo=cfg.SQL_ECHO, schema=cfg.DB_SCHEMA)
     db.create_all()
     hardened = install_immutability(db)
-    print(f"[init-db] tables created on {cfg.DATABASE_URL}"
+    print("[init-db] tables created"
           f"{' (append-only trigger installed)' if hardened else ''}")
 
 

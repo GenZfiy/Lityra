@@ -17,7 +17,7 @@ def cmd_init_db():
     cfg = CodingConfig()
     import app.models  # noqa: F401
     Database(cfg.DATABASE_URL, echo=cfg.SQL_ECHO, schema=cfg.DB_SCHEMA).create_all()
-    print(f"[init-db] tables created on {cfg.DATABASE_URL}")
+    print("[init-db] tables created successfully")
 
 
 def cmd_serve():

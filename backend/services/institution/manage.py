@@ -21,7 +21,7 @@ def cmd_init_db():
     cfg = InstitutionConfig()
     import app.models  # noqa: F401
     _db(cfg).create_all()
-    print(f"[init-db] tables created on {cfg.DATABASE_URL}")
+    print("[init-db] tables created successfully")
 
 
 def cmd_serve():

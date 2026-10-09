@@ -26,7 +26,7 @@ def cmd_init_db():
     # Keep built-in roles and permissions synchronized during normal startup.
     # This never creates an admin account; that remains an explicit `seed` action.
     seed(db, cfg, create_admin=False)
-    print(f"[init-db] tables created on {cfg.DATABASE_URL}")
+    print("[init-db] tables created successfully")
 
 
 def cmd_seed():
