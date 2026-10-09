@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { Link } from "react-router-dom";
 import { Mail, Star, Flame, Trophy, Award, Brain, Compass, Wallet as WalletIcon, ArrowRight } from "lucide-react";
 import { Card, Badge, Button, XPBar } from "../components/ui/primitives.jsx";
@@ -6,8 +7,8 @@ import { useAsync } from "../hooks/useAsync.js";
 import { useAuth } from "../lib/auth.jsx";
 import { api, withFallback } from "../lib/api.js";
 
-// LARE Learn — the learner's own profile. Identity comes from the shared platform
-// (auth), progress from LMS gamification. This page NEVER calls a LARE Hire
+// Lityra Learn — the learner's own profile. Identity comes from the shared platform
+// (auth), progress from LMS gamification. This page NEVER calls a Lityra Hire
 // (/drive/*) endpoint — the two products stay fully isolated; the recruitment
 // profile lives only on the Hire side.
 const EMPTY_GAME = { level: 1, total_xp: 0, next_level_at: 1000, streak: { current: 0, longest: 0 }, badges: [] };
@@ -25,7 +26,7 @@ export default function LearnProfile() {
     [id],
   );
 
-  if (game.loading) return <Loading />;
+  if (game.loading) return <Loading label="Loading your learner profile…" />;
   const g = game.data || EMPTY_GAME;
   const badges = g.badges || [];
   const roles = user?.roles || [];
@@ -33,16 +34,16 @@ export default function LearnProfile() {
     .split(/[\s@.]/).filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("");
 
   return (
-    <div>
+    <div className="page-composition page-composition-account learner-screen-learn-profile">
       <PageHeader
         title="My Profile"
         subtitle="Your learner identity & progress"
         right={<DataSource live={game.live} />}
       />
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="learner-profile-desk grid lg:grid-cols-3 gap-6">
         {/* Identity */}
-        <Card className="p-6 text-center">
+        <Card className="learner-identity-rail p-6 text-center">
           <span className="grid place-items-center h-24 w-24 rounded-full bg-invert-900 text-white text-3xl font-display font-bold mx-auto mb-4">
             {initials}
           </span>
@@ -56,7 +57,7 @@ export default function LearnProfile() {
         </Card>
 
         {/* Progress snapshot */}
-        <Card className="p-6 lg:col-span-2">
+        <Card className="learner-progress-record p-6 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold text-ink-900 flex items-center gap-2">
               <Star size={18} className="text-amber-500" /> Learning progress

@@ -1,13 +1,13 @@
-# LARE Drive — Production Architecture (Phase 2)
+# Lityra Drive — Production Architecture (Phase 2)
 
 **Status:** Phase 2 design — **Phases 3 (frontend) and 4 (backend) implemented.** See §15 for the delivered state.
-**Scope:** Evolve the existing LARE Hire/Drive product into the approved **Recruitment Operating System** without breaking the running LARE platform.
+**Scope:** Evolve the existing Lityra Hire/Drive product into the approved **Recruitment Operating System** without breaking the running Lityra platform.
 
 ---
 
 ## 1. Principles
 
-1. **Evolve, don't replace.** Reuse the platform's proven spine — API gateway, RS256 JWT, schema‑per‑service Postgres, the event bus, `lare_common`, and the React SPA. LARE Drive is a product surface + a set of new/extended services on that spine, not a parallel stack.
+1. **Evolve, don't replace.** Reuse the platform's proven spine — API gateway, RS256 JWT, schema‑per‑service Postgres, the event bus, `lare_common`, and the React SPA. Lityra Drive is a product surface + a set of new/extended services on that spine, not a parallel stack.
 2. **Evidence is the primary record.** Every score is derived from typed, sourced, append‑only **evidence**. Rankings, decisions, and AI insights all trace back to evidence rows.
 3. **AI recommends, humans decide.** Every AI output is `Observation → Reason → Impact → Recommended Action`, is stored, and is auditable. No unexplained magic numbers.
 4. **The Drive is the operating unit.** A Drive owns intent, competencies, rounds, pool, evidence, evaluations, decisions, actions, and outcomes. Its interface is generated from its configuration.
@@ -43,9 +43,9 @@ Drive → Intent → Competencies → Rounds → Candidate Signals → Evidence 
 ```mermaid
 flowchart TB
   U["Users: Recruiter · Hiring Manager · Interviewer · Evaluator · Leadership"]
-  SPA["LARE SPA — LARE Drive surface (new design system)"]
+  SPA["Lityra SPA — Lityra Drive surface (new design system)"]
   GW["API Gateway :8000 (RS256 verify · routing)"]
-  subgraph EXIST["Existing LARE services (reused / extended)"]
+  subgraph EXIST["Existing Lityra services (reused / extended)"]
     AUTH["auth"]; DRIVE["drive (core)"]; CAND["candidate"]; EXAM["exam"]; QB["questionbank"];
     COD["coding"]; SUB["submission"]; AC["anticheat"]; EVAL["evaluation"]; IV["interview"];
     RES["result"]; NOT["notification"]; FILE["files"]; AN["analytics"]; AUD["audit"]; AIO["ai_orchestration"]
@@ -63,7 +63,7 @@ flowchart TB
   NEW --> DB
 ```
 
-LARE Learn is untouched. The gateway gains routes for the new services under the existing `/drive/v1` prefix family.
+Lityra Learn is untouched. The gateway gains routes for the new services under the existing `/drive/v1` prefix family.
 
 ---
 
@@ -206,8 +206,8 @@ Bus events (Redis Streams / HTTP fan‑out): `evidence.added`, `evidence.conflic
 
 ## 10. Frontend architecture
 
-- **Placement:** a redesigned **LARE Drive** surface inside the existing SPA (`/drive/...`), behind the product chooser; LARE Learn untouched.
-- **Design system (LARE Drive):** tokenised dark‑first + light themes; the **visual grammar** becomes a component library:
+- **Placement:** a redesigned **Lityra Drive** surface inside the existing SPA (`/drive/...`), behind the product chooser; Lityra Learn untouched.
+- **Design system (Lityra Drive):** tokenised dark‑first + light themes; the **visual grammar** becomes a component library:
   - `PipelineRibbon`, `ReadOut` (+ `Delta`, sparkline), `Ledger`, `Stream`, `AIBlock` (O/R/I/A), `CandidateSignalCard`, `DecisionCard`, `AttentionItem`, `CommandPalette`, `Drawer`.
 - **State:** a typed store (drives, candidates, evidence, decisions, actions, insights) with React Query‑style server cache; optimistic action‑resolution; SSE/websocket for live pipeline + actions.
 - **Routing/guards:** role‑shaped landing (`setRole` → surface); `require_roles` mirrored client‑side for affordances only (server is authoritative).
@@ -234,14 +234,14 @@ Bus events (Redis Streams / HTTP fan‑out): `evidence.added`, `evidence.conflic
 
 1. **Additive first.** Add new schemas/services + `drive_core` columns; existing Drive endpoints keep working.
 2. **Backfill evidence.** Emit evidence from existing exam/coding/interview data via a one‑time migration + ongoing events; no destructive change.
-3. **Dual‑run UI.** Ship the new LARE Drive surface behind a flag; keep the current recruiter console until parity.
+3. **Dual‑run UI.** Ship the new Lityra Drive surface behind a flag; keep the current recruiter console until parity.
 4. **Cut over per drive.** New drives use the OS model; legacy drives finish on the old flow.
 
 ---
 
 ## 13. Delivery plan (per your workflow)
 
-- **Phase 3 — Frontend implementation:** build the LARE Drive design system + component library, wire to mocked/contract APIs, all approved surfaces, dark/light, RBAC affordances, real‑time stubs.
+- **Phase 3 — Frontend implementation:** build the Lityra Drive design system + component library, wire to mocked/contract APIs, all approved surfaces, dark/light, RBAC affordances, real‑time stubs.
 - **Phase 4 — Backend implementation:** new services (competency, evidence, decision, action, recruit‑ai), `drive_core` extensions, event wiring, AI prompts via `ai_orchestration`.
 - **Phase 5 — Integration + testing:** contract tests, evidence→decision lineage tests, calibration math, load tests on the action/evidence hot path, seed dataset.
 - **Phase 6 — Hardening:** RBAC/audit review, immutability grants, performance, accessibility, security.

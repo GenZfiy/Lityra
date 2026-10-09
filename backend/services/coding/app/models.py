@@ -32,7 +32,7 @@ class Problem(Base):
     hidden_cases: Mapped[list] = mapped_column(JSON, default=list)
     max_score: Mapped[float] = mapped_column(Float, default=100.0)
     # LMS practice metadata — feeds the Cognitive Twin (skill map). A problem is
-    # exposed in the LARE Learn practice bank only when practice=True; Drive exam
+    # exposed in the Lityra Learn practice bank only when practice=True; Drive exam
     # problems keep the default and never appear there.
     skill: Mapped[str] = mapped_column(String(64), default="General")  # e.g. Arrays, Strings, DP
     difficulty: Mapped[str] = mapped_column(String(16), default="easy")  # easy|medium|hard
@@ -46,7 +46,7 @@ class CodingSession(Base):
     problem_id: Mapped[str] = mapped_column(String(64), index=True)
     candidate_id: Mapped[str] = mapped_column(String(64), index=True)
     exam_session_id: Mapped[str | None] = mapped_column(String(64))
-    # "exam" (Drive coding round) or "practice" (LARE Learn practice). Only
+    # "exam" (Drive coding round) or "practice" (Lityra Learn practice). Only
     # practice sessions feed the LMS skill map.
     kind: Mapped[str] = mapped_column(String(16), default="exam", index=True)
     language: Mapped[str] = mapped_column(String(16), default="python")

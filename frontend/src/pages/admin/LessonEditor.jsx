@@ -1,3 +1,4 @@
+import "../../styles/institution-operations-pages.css";
 import { useEffect, useState } from "react";
 import {
   X, Plus, Type, Code2, Lightbulb, HelpCircle, ArrowUp, ArrowDown, Trash2,
@@ -7,7 +8,7 @@ import { Card, Button, Input } from "../../components/ui/primitives.jsx";
 import LessonBlocks from "../../components/LessonBlocks.jsx";
 import { api } from "../../lib/api.js";
 
-// A LARE "living lesson" editor: compose real teaching material as interactive
+// A Lityra "living lesson" editor: compose real teaching material as interactive
 // blocks — rich text, runnable code, callouts, and inline checks that feed the
 // learner's twin. Not a file/URL uploader.
 const LANGS = ["python", "javascript", "cpp", "java", "c"];
@@ -70,7 +71,7 @@ export default function LessonEditor({ lessonId, title, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-invert-900/40 flex items-start justify-center overflow-y-auto p-4">
+    <div className="institution-ops institution-ops-editor-modal fixed inset-0 z-50 bg-invert-900/40 flex items-start justify-center overflow-y-auto p-4">
       <Card className="w-full max-w-3xl my-8 p-0 overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
@@ -98,22 +99,24 @@ export default function LessonEditor({ lessonId, title, onClose, onSaved }) {
           )}
         </div>
 
-        <div className="px-6 py-4 max-h-[65vh] overflow-y-auto space-y-3">
-          {loading ? <p className="text-sm text-slate-400">Loading…</p> : preview ? (
-            <div className="max-w-2xl mx-auto"><LessonBlocks blocks={blocks} /></div>
-          ) : (
-            <>
-              {blocks.length === 0 && (
-                <p className="text-sm text-slate-400 text-center py-6">
-                  Empty lesson. Use <b>AI write lesson</b> above, or add blocks manually below.
-                </p>
-              )}
-              {blocks.map((b, i) => (
-                <BlockEditor key={i} b={b} i={i} total={blocks.length}
-                  onChange={(patch) => upd(i, patch)} onDelete={() => del(i)} onMove={(d) => move(i, d)} />
-              ))}
-            </>
-          )}
+        <div className="lesson-authoring-layout">
+          <aside className="lesson-outline"><span>LESSON OUTLINE</span><strong>{blocks.length}</strong><small>content blocks</small><ol>
+            {blocks.map((b, i) => <li key={i}><button type="button" onClick={() => document.getElementById(`lesson-block-${i}`)?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" })}><span>{String(i + 1).padStart(2, "0")}</span>{({ text: "Text", code: "Code", callout: "Callout", check: "Knowledge check" })[b.type] || "Block"}</button></li>)}
+            {!blocks.length && !loading && <li className="lesson-outline-empty">Outline appears as you add content</li>}
+          </ol></aside>
+          <div className="lesson-canvas px-6 py-4 max-h-[65vh] overflow-y-auto space-y-3">
+            {loading ? <p className="text-sm text-slate-400">Loading lesson material…</p> : preview ? (
+              <div className="max-w-2xl mx-auto"><LessonBlocks blocks={blocks} /></div>
+            ) : (
+              <>
+                {blocks.length === 0 && <p className="text-sm text-slate-400 text-center py-6">This lesson is empty. Generate a first draft above, or add a block below.</p>}
+                {blocks.map((b, i) => (
+                  <BlockEditor key={i} id={`lesson-block-${i}`} b={b} i={i} total={blocks.length}
+                    onChange={(patch) => upd(i, patch)} onDelete={() => del(i)} onMove={(d) => move(i, d)} />
+                ))}
+              </>
+            )}
+          </div>
         </div>
 
         <div className="px-6 py-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
@@ -132,10 +135,10 @@ export default function LessonEditor({ lessonId, title, onClose, onSaved }) {
   );
 }
 
-function BlockEditor({ b, i, total, onChange, onDelete, onMove }) {
+function BlockEditor({ id, b, i, total, onChange, onDelete, onMove }) {
   const label = { text: "Text", code: "Code", callout: "Callout", check: "Check" }[b.type];
   return (
-    <div className="rounded-lg border border-slate-200 p-3">
+    <section id={id} className="lesson-block rounded-lg border border-slate-200 p-3">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">{i + 1}. {label}</span>
         <div className="flex items-center gap-1">
@@ -200,6 +203,6 @@ function BlockEditor({ b, i, total, onChange, onDelete, onMove }) {
           <p className="text-[11px] text-slate-400 flex items-center gap-1"><CheckCircle2 size={11} /> Select the radio next to the correct option.</p>
         </div>
       )}
-    </div>
+    </section>
   );
 }

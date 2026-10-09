@@ -222,7 +222,7 @@ class WalletCredential(Base):
 class CareerRole(Base):
     """A career-role target for the LMS Skills-to-Opportunity map. Learners see
     how ready they are for each role based on their skill twin. Authored by
-    trainers/admins (seedable). Learn-domain only — independent from LARE Hire's
+    trainers/admins (seedable). Learn-domain only — independent from Lityra Hire's
     live drives, per the product-separation rule."""
     __tablename__ = "career_roles"
 

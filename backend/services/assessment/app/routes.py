@@ -59,6 +59,9 @@ def summary():
     learner_id = request.args.get("learner_id")
     if not learner_id:
         raise BadRequest("learner_id is required", code="learner_id_required")
+    ident = current_identity()
+    if not ident.has_role(*STAFF_LMS) and learner_id != ident.user_id:
+        raise Forbidden("You can only view your own assessment summary.")
     with _db().session() as s:
         return ok(_svc().summary(s, learner_id))
 
@@ -376,9 +379,9 @@ def export_wallet_pdf(learner_id):
         if not cred:
             raise BadRequest("Issue your wallet first", code="no_wallet")
         lines = _svc().wallet_pdf_lines(cred)
-    pdf = to_pdf("LARE Verified Competence Wallet", lines)
+    pdf = to_pdf("Lityra Verified Competence Wallet", lines)
     return Response(pdf, mimetype="application/pdf", headers={
-        "Content-Disposition": "attachment; filename=lare-wallet.pdf"})
+        "Content-Disposition": "attachment; filename=lityra-wallet.pdf"})
 
 
 @bp.get("/verify/wallet/<verify_id>")
@@ -451,7 +454,10 @@ def get_assessment(aid):
 def start(aid):
     ident = current_identity()
     data = _parse(StartIn, request.get_json(silent=True))
-    # Students start their own attempt; staff may start on behalf (e.g. proctored).
+    # Students cannot choose another learner identity in the request body.
+    if data.learner_id != ident.user_id and not ident.has_role(*STAFF_LMS):
+        raise Forbidden("You can only start your own assessment attempt.")
+    # Staff may start on behalf of a learner (e.g. proctored).
     learner_id = data.learner_id or ident.user_id
     with _db().session() as s:
         return created(_svc().start(s, aid, learner_id))

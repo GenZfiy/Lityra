@@ -7,7 +7,7 @@ import { api } from "../lib/api.js";
 import { renderMarkdown } from "../lib/markdown.js";
 import { useAuth } from "../lib/auth.jsx";
 
-// Shared renderer for a LARE "living lesson" — used by the curriculum lesson
+// Shared renderer for a Lityra "living lesson" — used by the curriculum lesson
 // viewer AND AI Micro-Lessons. `grade` is supplied by the parent so checks can
 // be graded on the server (curriculum) or on the client (personal lessons).
 export default function LessonBlocks({ blocks, grade, onCheckAnswered }) {

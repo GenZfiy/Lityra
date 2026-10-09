@@ -258,7 +258,7 @@ def my_round(did):
 @bp.get("/drive/v1/opportunities")
 @require_roles(*READ)
 def opportunities():
-    """Skills-to-Opportunity (LARE Hire): open drives ranked by how well the
+    """Skills-to-Opportunity (Lityra Hire): open drives ranked by how well the
     candidate's drive-exam skills match the roles. A student sees their own; staff
     may pass ?candidate_id= to view any."""
     ident = current_identity()

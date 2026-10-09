@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { KeyRound, ShieldCheck, LogOut, ArrowRight } from "lucide-react";
@@ -7,7 +8,7 @@ import { Orbs } from "../components/ui/Decor.jsx";
 import { useAuth } from "../lib/auth.jsx";
 import { api, accessGrant } from "../lib/api.js";
 
-// LARE Learn Access Gate. After signing in, a student must enter their class
+// Lityra Learn Access Gate. After signing in, a student must enter their class
 // Access ID (one shared code per College → Year → Branch → Section) to enter
 // the learning environment. Required every session; staff/admins skip this.
 export default function AccessGate() {
@@ -35,12 +36,12 @@ export default function AccessGate() {
   const firstName = (user?.full_name || user?.email || "there").split(/[\s@]/)[0];
 
   return (
-    <div className="min-h-screen grid place-items-center bg-invert-900 px-4 relative overflow-hidden">
+    <div className="page-composition page-composition-gate learner-screen-learn-gate"><div className="min-h-screen grid place-items-center bg-invert-900 px-4 relative overflow-hidden">
       <div className="bg-grid absolute inset-0 opacity-[0.12]" />
       <Orbs tone="cool" className="opacity-70" />
       <div className="relative w-full max-w-md">
         <div className="flex justify-center mb-6"><Logo dark size={110} /></div>
-        <Card className="p-8">
+        <Card className="gate-access-card p-8">
           <span className="grid place-items-center h-14 w-14 rounded-2xl bg-brand-500/10 text-brand-600 mb-4">
             <KeyRound size={26} />
           </span>
@@ -62,7 +63,7 @@ export default function AccessGate() {
               <p className="text-xs text-slate-500 mt-2">Opening your dashboard…</p>
             </div>
           ) : (
-            <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
+            <form onSubmit={submit} className="gate-code-form mt-6 space-y-4" noValidate>
               {error && (
                 <div className="rounded-md bg-rose-500/10 text-rose-600 text-sm px-3.5 py-2.5">{error}</div>
               )}
@@ -93,6 +94,6 @@ export default function AccessGate() {
           Don't have an Access ID? Contact your college coordinator / TPO.
         </p>
       </div>
-    </div>
+    </div></div>
   );
 }

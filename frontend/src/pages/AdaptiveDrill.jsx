@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -9,7 +10,7 @@ import ProctorBanner from "../components/ProctorBanner.jsx";
 import { api } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 
-// LARE Learn — Flow layer. An adaptive drill that raises difficulty when you're
+// Lityra Learn — Flow layer. An adaptive drill that raises difficulty when you're
 // confident and correct, and eases off when you struggle, keeping you in flow.
 const LEVEL_TONE = { easy: "teal", medium: "amber", hard: "rose" };
 
@@ -66,20 +67,29 @@ export default function AdaptiveDrill() {
     startedAt.current = Date.now();
   }
 
-  if (!user) return <Loading />;
+  if (!user) return <Loading label="Preparing your adaptive drill…" />;
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-adaptive-drill"><div>
       <PageHeader
         title="Adaptive Drill"
         subtitle="Questions that meet you where you are — they get harder when you're flying and gentler when you stumble, so you stay in the zone."
         right={<Button as={Link} to="/lms/skill-map" variant="secondary"><Brain size={16} /> Skill Map</Button>}
       />
 
-      {err && <Card className="p-4 mb-4 text-sm text-amber-600">{err}</Card>}
+      <nav className="drill-stepper" aria-label="Drill progress">
+        <ol>
+          {[["pick", "Choose focus"], ["play", "Work through questions"], ["done", "Review session"]].map(([key, label], index) => (
+            <li key={key} className={phase === key ? "is-current" : ""} aria-current={phase === key ? "step" : undefined}>
+              <span>{String(index + 1).padStart(2, "0")}</span><strong>{label}</strong>
+            </li>
+          ))}
+        </ol>
+      </nav>
+      {err && <Card className="drill-error-note p-4 mb-4 text-sm text-amber-600">{err}</Card>}
 
       {phase === "pick" && (
-        <Card className="p-8">
+        <Card className="drill-focus-picker p-8">
           <div className="flex items-center gap-3 mb-4">
             <span className="grid place-items-center h-11 w-11 rounded-lg bg-brand-500/10 text-brand-600"><Gauge size={22} /></span>
             <div>
@@ -114,7 +124,7 @@ export default function AdaptiveDrill() {
             <div className="h-full bg-brand-500 rounded-full transition-all" style={{ width: `${(drill.progress.answered / drill.progress.target) * 100}%` }} />
           </div>
 
-          <Card className="p-6">
+          <Card className="drill-question-panel p-6">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">{topic}</p>
             <p className="font-display text-lg font-semibold text-ink-900 mb-5">{drill.item.prompt}</p>
             <div className="space-y-2.5">
@@ -159,7 +169,7 @@ export default function AdaptiveDrill() {
       )}
 
       {phase === "done" && summary && (
-        <Card className="p-8 text-center max-w-lg mx-auto">
+        <Card className="drill-session-recap p-8 text-center max-w-lg mx-auto">
           <span className="mx-auto grid place-items-center h-14 w-14 rounded-full bg-brand-500/10 text-brand-600"><Trophy size={28} /></span>
           <h2 className="mt-4 font-display text-2xl font-bold text-ink-900">{summary.accuracy}% accuracy</h2>
           <p className="mt-1 text-slate-500">
@@ -173,6 +183,6 @@ export default function AdaptiveDrill() {
           </div>
         </Card>
       )}
-    </div>
+    </div></div>
   );
 }

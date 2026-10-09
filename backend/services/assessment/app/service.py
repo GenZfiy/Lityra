@@ -234,7 +234,7 @@ class AssessmentService:
     def skill_profile(self, s: Session, learner_id: str) -> dict:
         """Build an LMS learner's skill model from their assessment history —
         per learning-objective (topic) and per scorecard dimension (category)
-        mastery. Reads only LMS assessment data; fully separate from LARE Hire."""
+        mastery. Reads only LMS assessment data; fully separate from Lityra Hire."""
         attempts = s.execute(
             select(Attempt).where(Attempt.learner_id == learner_id)
         ).scalars().all()
@@ -442,7 +442,7 @@ class AssessmentService:
             return fallback
         strong_str = ", ".join(t["name"] for t in profile["strengths"]) or "none yet"
         weak_str = ", ".join("{} ({}%)".format(t["name"], t["mastery"]) for t in focus)
-        system = ("You are LARE's encouraging, practical study coach for an engineering student. "
+        system = ("You are Lityra's encouraging, practical study coach for an engineering student. "
                   "Be specific and motivating, never generic. Keep it concise.")
         top = focus[0]["name"]
         prompt = (
@@ -548,7 +548,7 @@ class AssessmentService:
     def career_readiness(self, s: Session, learner_id: str, threshold: float = 55.0) -> dict:
         """How ready is the learner for each career role? Matches the LMS skill
         twin (written topics + coding skills + languages) against each role's
-        required skills. Uses only LMS data — independent of LARE Hire."""
+        required skills. Uses only LMS data — independent of Lityra Hire."""
         profile = self.skill_profile(s, learner_id)
         m: dict[str, float] = {}
         for row in (profile.get("topics") or []) + (profile.get("by_category") or []):
@@ -723,10 +723,10 @@ class AssessmentService:
             resp = _AUTH.get("auth", "/auth/v1/users?ids={}".format(learner_id))
             rows = (resp or {}).get("data") or []
             if rows:
-                return rows[0].get("full_name") or "LARE Learner"
+                return rows[0].get("full_name") or "Lityra Learner"
         except Exception:  # noqa: BLE001
             log.warning("could not resolve learner name for wallet")
-        return "LARE Learner"
+        return "Lityra Learner"
 
     def _build_wallet_payload(self, s: Session, learner_id: str) -> dict:
         profile = self.skill_profile(s, learner_id)
@@ -745,7 +745,7 @@ class AssessmentService:
             "verified_coding_skills": verified_coding,
             "top_career": ({"title": top["title"], "match_pct": top["match_pct"]}
                            if top else None),
-            "issuer": "LARE Learn",
+            "issuer": "Lityra Learn",
         }
 
     def issue_wallet(self, s: Session, learner_id: str) -> dict:
@@ -804,7 +804,7 @@ class AssessmentService:
     def wallet_pdf_lines(self, cred: dict) -> list[str]:
         vc = cred.get("credential") or {}
         lines = [
-            "Holder: {}".format(cred.get("subject_name") or "LARE Learner"),
+            "Holder: {}".format(cred.get("subject_name") or "Lityra Learner"),
             "Issued: {}".format((cred.get("issued_at") or "")[:10]),
             "Verify at: /verify/wallet/{}".format(cred.get("verify_id")),
             "",
@@ -1068,7 +1068,7 @@ class AssessmentService:
 
     def _ai_blocks(self, topic: str, mastery: float) -> dict:
         fallback = self._fallback_blocks(topic)
-        system = ("You are LARE's expert tutor writing complete, textbook-quality yet "
+        system = ("You are Lityra's expert tutor writing complete, textbook-quality yet "
                   "spoon-fed study material a beginner can follow end-to-end. Go deep: "
                   "define terms, give a shared worked example, cover EVERY sub-type or "
                   "variant of the topic, and always explain the WHY. Prefer thorough "
@@ -1350,7 +1350,7 @@ class AssessmentService:
         """Generate ONE real MCQ at a difficulty via the LMS AI. Returns a dict
         with the answer key (kept server-side), or None if AI is unavailable."""
         subject = topic or "core computer science and aptitude"
-        system = ("You are LARE's exam author. Write ONE high-quality multiple-choice "
+        system = ("You are Lityra's exam author. Write ONE high-quality multiple-choice "
                   "question. Make distractors plausible. Exactly one correct option. "
                   "Match the requested difficulty precisely.")
         prompt = (

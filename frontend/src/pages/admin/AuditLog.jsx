@@ -1,3 +1,4 @@
+import "../../styles/institution-operations-pages.css";
 import { useEffect, useState } from "react";
 import {
   ScrollText, ShieldCheck, ShieldAlert, RefreshCw, Search, Filter,
@@ -42,7 +43,7 @@ export default function AuditLog() {
   }
 
   return (
-    <div>
+    <div className="page-composition page-composition-institution institution-ops institution-ops-audit"><div>
       <PageHeader
         title="Audit Trail"
         subtitle="A tamper-evident record of every administrative action across the platform."
@@ -63,9 +64,13 @@ export default function AuditLog() {
         }
       />
 
+      <section className="audit-workbench" aria-label="Audit event explorer">
+      <aside className="audit-filter-rail">
+        <div className="audit-snapshot"><span>LOADED EVENTS</span><strong>{loading ? "…" : rows.length}</strong><small>{rows.length ? `Sequence ${rows[rows.length - 1]?.seq ?? "—"} through ${rows[0]?.seq ?? "—"}` : "No matching records"}</small></div>
       {/* Filters */}
-      <Card className="p-4 mb-4">
-        <div className="grid sm:grid-cols-4 gap-3 items-end">
+      <Card className="audit-filters p-4">
+        <h2 className="text-sm font-semibold text-ink-900 mb-3">Narrow the record</h2>
+        <div className="grid gap-3 items-end">
           <Field label="Action">
             <select value={filters.action} onChange={(e) => setFilters({ ...filters, action: e.target.value })}
               className="w-full h-10 rounded-lg border border-slate-200 bg-surface px-3 text-sm">
@@ -93,54 +98,33 @@ export default function AuditLog() {
           <Button onClick={load}><Filter size={15} /> Apply</Button>
         </div>
       </Card>
+      </aside>
 
       {err && <div className="rounded-md bg-rose-500/10 text-rose-600 text-sm px-3.5 py-2.5 mb-4">{err}</div>}
 
+      <main className="audit-ledger-area">
+      <div className="audit-ledger-title"><span>IMMUTABLE EVENT STREAM</span><strong>{verify ? (verify.valid ? "CHAIN VERIFIED" : "INTEGRITY ISSUE") : "VERIFICATION NOT RUN"}</strong></div>
       {loading ? <Loading /> : rows.length === 0 ? (
         <EmptyState title="No audit records" hint="Administrative actions will appear here as they happen." />
       ) : (
-        <Card className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-slate-500 border-b border-slate-100">
-                  <th className="px-5 py-3 font-medium">When</th>
-                  <th className="px-5 py-3 font-medium">Actor</th>
-                  <th className="px-5 py-3 font-medium">Action</th>
-                  <th className="px-5 py-3 font-medium">Target</th>
-                  <th className="px-5 py-3 font-medium">Details</th>
-                  <th className="px-5 py-3 font-medium tabular-nums">Seq</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-50 last:border-0 align-top">
-                    <td className="px-5 py-3 text-slate-500 whitespace-nowrap">
-                      {r.ts ? new Date(r.ts).toLocaleString() : "—"}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="font-mono text-xs text-slate-600">{r.actor_id?.slice(0, 8) || "system"}</span>
-                      <span className="block text-[11px] text-slate-400">{r.actor_type}</span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <Badge tone={ACTION_TONE(r.action)}>{prettyAction(r.action)}</Badge>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="text-slate-600">{r.entity_type}</span>
-                      {r.entity_id && <span className="block font-mono text-[11px] text-slate-400">{r.entity_id.slice(0, 12)}</span>}
-                    </td>
-                    <td className="px-5 py-3 max-w-xs">
-                      <MetaSummary meta={r.meta} />
-                    </td>
-                    <td className="px-5 py-3 tabular-nums text-slate-400">{r.seq}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <Card className="audit-timeline-card p-0 overflow-hidden">
+          <ol className="audit-timeline">
+            {rows.map((r) => (
+              <li key={r.id} className="audit-event">
+                <span className="audit-event-marker" aria-hidden="true" />
+                <article>
+                  <header><time>{r.ts ? new Date(r.ts).toLocaleString() : "—"}</time><span className="audit-event-seq">SEQ {r.seq}</span></header>
+                  <div className="audit-event-body"><div><Badge tone={ACTION_TONE(r.action)}>{prettyAction(r.action)}</Badge><p className="audit-event-actor">{r.actor_id?.slice(0, 8) || "system"} <span>· {r.actor_type}</span></p></div><div className="audit-event-target"><span>{r.entity_type}</span>{r.entity_id && <code>{r.entity_id.slice(0, 12)}</code>}</div></div>
+                  <div className="audit-event-details"><MetaSummary meta={r.meta} /></div>
+                </article>
+              </li>
+            ))}
+          </ol>
         </Card>
       )}
-    </div>
+      </main>
+      </section>
+    </div></div>
   );
 }
 

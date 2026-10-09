@@ -181,25 +181,38 @@ def resolve_candidates():
 
 @bp.post("/drive/v1/attend")
 def attend():
-    # Public (no login): a walk-in student registers for the active drive, gets a
-    # Student ID + a session, and is registered on the drive via the event bus.
+    # Public (no login): create a pending record. Auth sends an email OTP; no
+    # session is issued until the user proves control of the registered address.
     data = _parse(AttendIn, request.get_json(silent=True))
     with _db().session() as s:
-        out, user_id, drive = _svc().attend(s, data)
-    bus = current_app.extensions.get("bus")
-    if bus and drive.get("id"):
-        bus.publish("candidate.registered", {
-            "candidate_id": user_id, "drive_id": drive["id"],
-            "drive_title": drive.get("title"), "user_id": user_id})
+        out, _user_id, drive = _svc().attend(s, data)
+    _svc().send_registration_otp(data.email)
+    out["drive"] = {"id": drive.get("id"), "title": drive.get("title"),
+                    "company_name": drive.get("company_name")}
     return created(out)
 
 
 @bp.post("/drive/v1/attend/resume")
 def attend_resume():
-    # Public (no login): return with a Student ID to get a fresh session.
+    # Public request, but possession of the Student ID alone is insufficient.
     data = _parse(ResumeAttendIn, request.get_json(silent=True))
     with _db().session() as s:
-        return ok(_svc().resume(s, data.student_id))
+        _svc().request_resume_otp(s, data.student_id, str(data.email))
+    # Uniform response: do not reveal whether the ID and email matched.
+    return ok({"sent": True})
+
+
+@bp.post("/drive/v1/attend/complete")
+def complete_attend():
+    ident = current_identity()
+    with _db().session() as s:
+        drive = _svc().complete_attend(s, ident.user_id, ident.product or "")
+    bus = current_app.extensions.get("bus")
+    if bus and drive:
+        bus.publish("candidate.registered", {
+            "candidate_id": ident.user_id, "drive_id": drive["id"],
+            "drive_title": drive.get("title"), "user_id": ident.user_id})
+    return ok({"registered": True})
 
 
 @bp.post("/drive/v1/candidate/apply")

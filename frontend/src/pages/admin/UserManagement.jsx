@@ -1,3 +1,4 @@
+import "../../styles/institution-operations-pages.css";
 import { useEffect, useMemo, useState } from "react";
 import {
   Users, Search, ShieldCheck, Ban, CheckCircle2, Plus, X, Trash2, Building2,
@@ -16,6 +17,7 @@ export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [colleges, setColleges] = useState([]);
+  const [trainingCenters, setTrainingCenters] = useState([]);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [sel, setSel] = useState(null);
@@ -23,6 +25,10 @@ export default function UserManagement() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [creating, setCreating] = useState(false);
+  const scopeOrganizations = [
+    ...colleges.map((item) => ({ ...item, scope_kind: "college" })),
+    ...trainingCenters.map((item) => ({ ...item, scope_kind: "training_center" })),
+  ];
 
   async function loadUsers() {
     const rows = await api.adminUsers({ q, status });
@@ -33,8 +39,8 @@ export default function UserManagement() {
   useEffect(() => {
     (async () => {
       try {
-        const [r, c] = await Promise.all([api.listRoles(), api.colleges().catch(() => [])]);
-        setRoles(r || []); setColleges(c || []);
+        const [r, c, t] = await Promise.all([api.listRoles(), api.colleges().catch(() => []), api.trainingCenters().catch(() => [])]);
+        setRoles(r || []); setColleges(c || []); setTrainingCenters(t || []);
         await loadUsers();
       } catch (e) { setErr(e.message || "Failed to load users."); }
       setLoading(false);
@@ -69,7 +75,7 @@ export default function UserManagement() {
   if (loading) return <Loading />;
 
   return (
-    <div>
+    <div className="page-composition page-composition-institution institution-ops institution-ops-users"><div>
       <PageHeader
         title="User Management"
         subtitle="Everyone on the platform. Assign scoped roles, and suspend or reactivate accounts."
@@ -83,9 +89,10 @@ export default function UserManagement() {
           onDone={async () => { setCreating(false); await loadUsers(); }} />
       )}
 
-      <div className="grid lg:grid-cols-[1fr_400px] gap-5">
+      <section className="people-workspace" aria-label="Platform user directory">
         {/* Users list */}
-        <Card className="p-0 overflow-hidden self-start">
+        <Card className="people-directory p-0 overflow-hidden self-start">
+          <header className="people-directory-heading"><div><span>ACCOUNT DIRECTORY</span><h2>People &amp; access</h2><p>Search identities, then inspect their product and scoped grants.</p></div><strong>{users.length}<small>loaded</small></strong></header>
           <div className="p-3 border-b border-slate-100 flex gap-2">
             <div className="relative flex-1">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -126,12 +133,12 @@ export default function UserManagement() {
         {!sel ? (
           <EmptyState title="Select a user" hint="Pick someone to manage their roles and account." />
         ) : (
-          <UserDetail user={sel} roles={roles} colleges={colleges} busy={busy}
+          <main className="people-detail-workspace"><div className="people-detail-heading"><span>SELECTED ACCOUNT</span><p>Review account state and organization scope before changing access.</p></div><UserDetail user={sel} roles={roles} organizations={scopeOrganizations} busy={busy}
             onToggleStatus={() => toggleStatus(sel)} onRemoveRole={(a) => removeRole(sel, a)}
-            onChanged={loadUsers} setErr={setErr} />
+            onChanged={loadUsers} setErr={setErr} /></main>
         )}
-      </div>
-    </div>
+      </section>
+    </div></div>
   );
 }
 
@@ -180,7 +187,7 @@ function CreateUserForm({ roles, onCancel, onDone, setErr }) {
   );
 }
 
-function UserDetail({ user, roles, colleges, busy, onToggleStatus, onRemoveRole, onChanged, setErr }) {
+function UserDetail({ user, roles, organizations, busy, onToggleStatus, onRemoveRole, onChanged, setErr }) {
   const [adding, setAdding] = useState(false);
   return (
     <Card className="p-5 self-start">
@@ -214,7 +221,7 @@ function UserDetail({ user, roles, colleges, busy, onToggleStatus, onRemoveRole,
             <div key={i} className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2">
               <div className="min-w-0">
                 <span className="text-sm font-medium text-ink-900">{a.role}</span>
-                <ScopeLine a={a} colleges={colleges} />
+                <ScopeLine a={a} organizations={organizations} />
               </div>
               <button onClick={() => onRemoveRole(a)} disabled={busy}
                 className="text-slate-300 hover:text-rose-500 shrink-0"><Trash2 size={15} /></button>
@@ -223,7 +230,7 @@ function UserDetail({ user, roles, colleges, busy, onToggleStatus, onRemoveRole,
         </div>
 
         {adding && (
-          <AssignForm user={user} roles={roles} colleges={colleges}
+          <AssignForm user={user} roles={roles} organizations={organizations}
             onCancel={() => setAdding(false)} setErr={setErr}
             onDone={async () => { setAdding(false); await onChanged(); }} />
         )}
@@ -232,20 +239,20 @@ function UserDetail({ user, roles, colleges, busy, onToggleStatus, onRemoveRole,
   );
 }
 
-function ScopeLine({ a, colleges }) {
+function ScopeLine({ a, organizations }) {
   if (!a.college_id)
     return <span className="block text-xs text-slate-400">Platform-wide</span>;
-  const cname = colleges.find((c) => c.id === a.college_id)?.name || a.college_id;
-  const bits = [cname];
-  if (a.branch_id) bits.push("branch");
-  if (a.cohort_id) bits.push("section");
+  const organization = organizations.find((item) => item.id === a.college_id);
+  const bits = [organization?.name || a.college_id];
+  if (a.branch_id) bits.push(organization?.scope_kind === "training_center" ? "program scoped" : "branch scoped");
+  if (a.cohort_id) bits.push(organization?.scope_kind === "training_center" ? "batch scoped" : "section scoped");
   return <span className="block text-xs text-slate-400 flex items-center gap-1">
     <Building2 size={11} /> {bits.join(" · ")}</span>;
 }
 
-function AssignForm({ user, roles, colleges, onCancel, onDone, setErr }) {
+function AssignForm({ user, roles, organizations, onCancel, onDone, setErr }) {
   const [role, setRole] = useState("");
-  const [collegeId, setCollegeId] = useState("");
+  const [scopeId, setScopeId] = useState("");
   const [branches, setBranches] = useState([]);
   const [branchId, setBranchId] = useState("");
   const [cohorts, setCohorts] = useState([]);
@@ -257,12 +264,23 @@ function AssignForm({ user, roles, colleges, onCancel, onDone, setErr }) {
   const needCollege = roleObj && roleObj.scope_level !== "platform" && roleObj.scope_level !== "self";
   const needBranch = roleObj && (roleObj.scope_level === "branch" || roleObj.scope_level === "section");
   const needCohort = roleObj && roleObj.scope_level === "section";
+  const selectedOrganization = organizations.find((item) => item.id === scopeId);
 
   useEffect(() => {
-    if (!collegeId) { setBranches([]); setCohorts([]); return; }
-    api.collegeBranches(collegeId).then((b) => setBranches(b || [])).catch(() => setBranches([]));
-    api.collegeCohorts(collegeId).then((c) => setCohorts(c || [])).catch(() => setCohorts([]));
-  }, [collegeId]);
+    if (!selectedOrganization) { setBranches([]); setCohorts([]); return; }
+    if (selectedOrganization.scope_kind === "training_center") {
+      api.trainingPrograms(scopeId).then((rows) => setBranches(rows || [])).catch(() => setBranches([]));
+      setCohorts([]);
+    } else {
+      api.collegeBranches(scopeId).then((rows) => setBranches(rows || [])).catch(() => setBranches([]));
+      api.collegeCohorts(scopeId).then((rows) => setCohorts(rows || [])).catch(() => setCohorts([]));
+    }
+  }, [scopeId, selectedOrganization?.scope_kind]);
+
+  useEffect(() => {
+    if (selectedOrganization?.scope_kind !== "training_center" || !branchId || !needCohort) return;
+    api.trainingBatches(scopeId).then((rows) => setCohorts((rows || []).filter((item) => item.program_id === branchId))).catch(() => setCohorts([]));
+  }, [branchId, scopeId, selectedOrganization?.scope_kind, needCohort]);
 
   async function assign() {
     if (!role) return;
@@ -270,7 +288,7 @@ function AssignForm({ user, roles, colleges, onCancel, onDone, setErr }) {
     try {
       await api.assignRole({
         user_id: user.id, role,
-        college_id: needCollege ? (collegeId || null) : null,
+        college_id: needCollege ? (scopeId || null) : null,
         branch_id: needBranch ? (branchId || null) : null,
         cohort_id: needCohort ? (cohortId || null) : null,
       });
@@ -282,7 +300,7 @@ function AssignForm({ user, roles, colleges, onCancel, onDone, setErr }) {
   return (
     <div className="mt-3 rounded-lg border border-brand-500/20 bg-brand-500/5 p-3 space-y-3">
       <Field label="Role">
-        <select value={role} onChange={(e) => setRole(e.target.value)}
+        <select value={role} onChange={(e) => { setRole(e.target.value); setScopeId(""); setBranchId(""); setCohortId(""); }}
           className="w-full h-10 rounded-lg border border-slate-200 bg-surface px-3 text-sm">
           <option value="">Select a role…</option>
           {roles.filter((r) => r.is_active).map((r) => (
@@ -291,35 +309,36 @@ function AssignForm({ user, roles, colleges, onCancel, onDone, setErr }) {
         </select>
       </Field>
       {needCollege && (
-        <Field label="College">
-          <select value={collegeId} onChange={(e) => setCollegeId(e.target.value)}
+        <Field label="College / training center">
+          <select value={scopeId} onChange={(e) => { setScopeId(e.target.value); setBranchId(""); setCohortId(""); }}
             className="w-full h-10 rounded-lg border border-slate-200 bg-surface px-3 text-sm">
-            <option value="">Select college…</option>
-            {colleges.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            <option value="">Select organization…</option>
+            <optgroup label="Colleges">{organizations.filter((item) => item.scope_kind === "college").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</optgroup>
+            <optgroup label="Training centers">{organizations.filter((item) => item.scope_kind === "training_center").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</optgroup>
           </select>
         </Field>
       )}
       {needBranch && (
-        <Field label="Branch">
-          <select value={branchId} onChange={(e) => setBranchId(e.target.value)} disabled={!collegeId}
+        <Field label={selectedOrganization?.scope_kind === "training_center" ? "Program" : "Branch"}>
+          <select value={branchId} onChange={(e) => { setBranchId(e.target.value); setCohortId(""); }} disabled={!scopeId}
             className="w-full h-10 rounded-lg border border-slate-200 bg-surface px-3 text-sm disabled:opacity-50">
-            <option value="">Select branch…</option>
-            {branches.map((b) => <option key={b.id} value={b.id}>{b.name || b.code}</option>)}
+            <option value="">Select {selectedOrganization?.scope_kind === "training_center" ? "program" : "branch"}…</option>
+            {branches.map((item) => <option key={item.id} value={item.id}>{item.name || item.code}</option>)}
           </select>
         </Field>
       )}
       {needCohort && (
-        <Field label="Section">
-          <select value={cohortId} onChange={(e) => setCohortId(e.target.value)} disabled={!collegeId}
+        <Field label={selectedOrganization?.scope_kind === "training_center" ? "Batch" : "Section"}>
+          <select value={cohortId} onChange={(e) => setCohortId(e.target.value)} disabled={!scopeId || (selectedOrganization?.scope_kind === "training_center" && !branchId)}
             className="w-full h-10 rounded-lg border border-slate-200 bg-surface px-3 text-sm disabled:opacity-50">
-            <option value="">Select section…</option>
-            {cohorts.map((c) => <option key={c.id} value={c.id}>Year {c.year_no}{c.section ? ` · Sec ${c.section}` : ""}</option>)}
+            <option value="">Select {selectedOrganization?.scope_kind === "training_center" ? "batch" : "section"}…</option>
+            {cohorts.map((item) => <option key={item.id} value={item.id}>{selectedOrganization?.scope_kind === "training_center" ? item.name : `Year ${item.year_no}${item.section ? ` · Sec ${item.section}` : ""}`}</option>)}
           </select>
         </Field>
       )}
       <div className="flex items-center justify-end gap-2">
         <Button variant="secondary" size="sm" onClick={onCancel}><X size={14} /> Cancel</Button>
-        <Button size="sm" onClick={assign} disabled={busy || !role}><Plus size={14} /> {busy ? "Assigning…" : "Assign role"}</Button>
+        <Button size="sm" onClick={assign} disabled={busy || !role || (needCollege && !scopeId) || (needBranch && !branchId) || (needCohort && !cohortId)}><Plus size={14} /> {busy ? "Assigning…" : "Assign role"}</Button>
       </div>
     </div>
   );

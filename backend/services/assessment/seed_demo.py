@@ -88,7 +88,7 @@ def main():
     # Keep the seed offline/fast: no east-west calls to coding/auth.
     svc_mod._coding_skills = lambda learner_id: {}
     svc = AssessmentService()
-    svc._resolve_name = lambda lid: NAME.get(lid, "LARE Learner")
+    svc._resolve_name = lambda lid: NAME.get(lid, "Lityra Learner")
 
     # --- shared assessments + career roles (one committed session) ---
     with db.session() as s:

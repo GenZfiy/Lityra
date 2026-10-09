@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, MapPin, Clock, Play, ListChecks } from "lucide-react";
@@ -8,7 +9,7 @@ import { api, withFallback } from "../lib/api.js";
 import { demoDrives } from "../lib/demo.js";
 import { ReadOut } from "../components/drive/grammar.jsx";
 
-// Student view of LARE Hire. Students register via the public "Attend Drive"
+// Student view of Lityra Hire. Students register via the public "Attend Drive"
 // flow, so here they simply see the open drive(s) and start the assessment — no
 // per-drive apply step. No LMS content here.
 export default function Drives() {
@@ -48,10 +49,10 @@ export default function Drives() {
     });
   }
 
-  if (drives.loading) return <Loading />;
+  if (drives.loading) return <Loading label="Loading your registered drives…" />;
 
   return (
-    <div>
+    <div className="page-composition page-composition-candidate learner-screen-candidate-drives"><div>
       <PageHeader
         title="My Drive"
         subtitle="Start your assessment for the drive you registered for"
@@ -66,7 +67,7 @@ export default function Drives() {
           <ReadOut label="Assessments" value={Object.values(exams).reduce((n, e) => n + (e?.length || 0), 0)} hint="ready to start" />
           <ReadOut label="Companies" value={new Set(list.map((d) => d.company_name)).size} hint="hiring on campus" />
         </div>
-        <div className="grid md:grid-cols-2 gap-4">
+        <section className="candidate-drive-ledger" aria-label="Registered hiring drives">
           {list.map((d) => {
             const driveExams = visibleExams(d.id);
             return (
@@ -107,9 +108,9 @@ export default function Drives() {
               </Card>
             );
           })}
-        </div>
+        </section>
         </>
       )}
-    </div>
+    </div></div>
   );
 }

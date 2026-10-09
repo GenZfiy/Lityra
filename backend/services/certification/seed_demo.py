@@ -43,15 +43,15 @@ def main():
     made = fixed = fail = 0
     for r in ROSTER:
         uid, i = r["user_id"], r["idx"]
-        # readable, unique public code, e.g. LARE-VER-4821
-        vid = "LARE-VER-{:04d}".format(1000 + (i * 313) % 9000)
+        # Public verification IDs are random bearer references, not enumerable codes.
+        vid = random_token(32)
         try:
             with db.session() as s:
                 c = s.execute(select(Certificate).where(
                     Certificate.learner_id == uid, Certificate.year_no == 1)).scalars().first()
                 if c is None:
                     s.add(Certificate(id=new_id(), learner_id=uid, year_no=1, template_id=None,
-                                      cert_no="LARE-Y1-{:04d}".format(i),
+                                      cert_no="LITYRA-Y1-{:04d}".format(i),
                                       cert_name="Year 1 - Foundations of Engineering",
                                       verify_id=vid, status="issued",
                                       holder_name=r["name"], ppo_tag=(i % 5 == 0)))

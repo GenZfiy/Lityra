@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useRef, useState } from "react";
 import { FileCheck2, CheckCircle2, Timer, Trophy, RotateCcw, ShieldAlert } from "lucide-react";
 import { Card, Badge, Button } from "../components/ui/primitives.jsx";
@@ -11,7 +12,7 @@ const VIOLATION_LIMIT = 5;
 
 // Student LMS assessment take-flow: start attempt -> answer -> submit -> score.
 // Proctored assessments enforce fullscreen + tab-switch/copy-paste rules and
-// auto-submit at 5 warnings — the same anti-cheat used in LARE Hire exams.
+// auto-submit at 5 warnings — the same anti-cheat used in Lityra Hire exams.
 export default function Assessments() {
   const { user } = useAuth();
   const learnerId = user?.id || DEMO_LEARNER_ID;
@@ -115,7 +116,7 @@ export default function Assessments() {
       time_limit_min: demoAssessment.duration_min, proctored: false,
     }];
     return (
-      <div>
+      <div className="page-composition page-composition-learning learner-screen-assessments">
         <PageHeader title="Assessments" subtitle="Pick an assessment to build your skill scorecard" />
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
           {cards.map((a) => (
@@ -149,7 +150,7 @@ export default function Assessments() {
     const items = assessment.items || [];
     const answered = Object.keys(answers).length;
     return (
-      <div>
+      <div className="page-composition page-composition-learning learner-screen-assessments">
         <PageHeader
           title={assessment.title}
           subtitle={`${answered}/${items.length} answered`}
@@ -203,7 +204,7 @@ export default function Assessments() {
 
   // done
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-assessments"><div>
       <PageHeader title="Result" subtitle={assessment.title} right={<DataSource live={live} />} />
       <Card className="p-8 max-w-md text-center">
         <div className={`mx-auto grid place-items-center h-20 w-20 rounded-full mb-4 ${result.passed ? "bg-teal-500/10 text-teal-600" : "bg-rose-500/10 text-rose-600"}`}>
@@ -226,6 +227,6 @@ export default function Assessments() {
           <Button onClick={() => start(assessment)}><RotateCcw size={16} /> Retake</Button>
         </div>
       </Card>
-    </div>
+    </div></div>
   );
 }

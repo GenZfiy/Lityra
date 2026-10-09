@@ -33,16 +33,17 @@ CERT_TYPES = {
 class CertificationService:
     @staticmethod
     def _new_verify_id(s: Session) -> str:
-        """A readable, unique public verification code, e.g. LARE-VER-4821."""
-        import random
+        """Create a high-entropy, unique public verification reference."""
+        import secrets
         from .models import Certificate
         for _ in range(60):
-            vid = "LARE-VER-{:04d}".format(random.randint(1000, 9999))
+            # 256 bits of entropy; verification IDs are public bearer references.
+            vid = secrets.token_urlsafe(32)
             if s.execute(select(Certificate).where(
                     Certificate.verify_id == vid)).scalar_one_or_none() is None:
                 return vid
         # extremely unlikely fallback if the 4-digit space is exhausted
-        return "LARE-VER-" + random_token(6).upper()
+        return random_token(32)
 
     def upsert_template(self, s: Session, data) -> "Template":  # noqa: F821
         from .models import Template
@@ -77,7 +78,7 @@ class CertificationService:
         cert = Certificate(
             id=new_id(), learner_id=data.learner_id, year_no=data.year_no,
             template_id=tmpl.id if tmpl else None,
-            cert_no=f"LARE-Y{data.year_no}-{seq:06d}",
+            cert_no=f"LITYRA-Y{data.year_no}-{seq:06d}",
             cert_name=cert_name,
             verify_id=self._new_verify_id(s),
             ppo_tag=bool(data.ppo_tag and data.year_no == 4),
@@ -97,7 +98,7 @@ class CertificationService:
         seq = s.query(Certificate).count() + 1
         cert = Certificate(
             id=new_id(), learner_id=learner_id, year_no=0,
-            cert_no=f"LARE-{cert_type[:4].upper()}-{seq:06d}",
+            cert_no=f"LITYRA-{cert_type[:4].upper()}-{seq:06d}",
             cert_name=name, verify_id=self._new_verify_id(s),
             ppo_tag=False, holder_name=holder_name)
         s.add(cert)
@@ -117,7 +118,7 @@ class CertificationService:
             f"Certificate No: {cert.cert_no}",
             f"Issued: {cert.issued_at.strftime('%d %b %Y')}",
             f"Verify at: /verify/{cert.verify_id}",
-            "", "LARE IT Cloud Solutions",
+            "", "GenZify — Engineering Human Potential Through Technology",
         ]
         return to_pdf(cert.cert_name, lines), f"certificate-{cert.cert_no}.pdf"
 
@@ -159,6 +160,17 @@ class CertificationService:
             "issued_at": cert.issued_at.isoformat(),
             "status": cert.status,
         }
+
+    def rotate_weak_verify_ids(self, s: Session) -> int:
+        """Replace legacy four-digit public verification codes with random IDs."""
+        import re
+        from .models import Certificate
+        rows = [cert for cert in s.execute(select(Certificate)).scalars().all()
+                if re.fullmatch(r"LARE-VER-[0-9]{4}", cert.verify_id or "")]
+        for cert in rows:
+            cert.verify_id = self._new_verify_id(s)
+        s.flush()
+        return len(rows)
 
     @staticmethod
     def out(cert) -> dict:

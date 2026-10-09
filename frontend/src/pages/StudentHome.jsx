@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import {
   GraduationCap, CheckCircle2, ArrowRight, Lock, Target, Sparkles,
@@ -33,14 +34,14 @@ export default function StudentHome() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <Loading />;
+  if (loading) return <Loading label="Loading your roadmap and progress…" />;
   if (err) return <EmptyState title="Dashboard unavailable" hint={err} />;
   if (!home) return null;
 
   const { profile: p, progress, roadmap, placement_readiness, recommendations } = home;
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning"><div className="student-roadmap-page">
       <PageHeader
         title={p.name || "My Dashboard"}
         subtitle={`${p.program}${p.branch_code ? ` · ${p.branch_code}` : ""} · ${p.college} · Year ${p.year_no} of ${p.n_years}`}
@@ -50,7 +51,9 @@ export default function StudentHome() {
       />
 
       {/* Progress rings */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+      <section className="student-signalboard" aria-label="Your progress at a glance">
+        <div className="student-signalboard-heading"><span>01 / YOUR SIGNALS</span><h2>Progress, across the journey</h2></div>
+        <div className="student-signalboard-grid">
         {["academic", "skill", "placement", "course_completion"].map((k) => {
           const meta = RING[k]; const Icon = meta.icon;
           return (
@@ -64,11 +67,12 @@ export default function StudentHome() {
             </Card>
           );
         })}
-      </div>
+        </div>
+      </section>
 
-      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5">
+      <div className="student-roadmap-layout">
         {/* Roadmap */}
-        <Card className="p-5">
+        <Card className="student-roadmap-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-ink-900 flex items-center gap-2">
               <GraduationCap size={18} className="text-brand-500" /> Your Learning Roadmap
@@ -112,7 +116,7 @@ export default function StudentHome() {
           </Card>
         </div>
       </div>
-    </div>
+    </div></div>
   );
 }
 
@@ -151,7 +155,7 @@ function YearBlock({ y }) {
             className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition
               ${openMid === m.id ? "ring-1 ring-brand-400 " : ""}
               ${m.done ? "bg-teal-500/10 text-teal-700 hover:bg-teal-500/20"
-                : y.current ? "bg-white border border-brand-200 text-ink-800 hover:border-brand-400"
+                : y.current ? "bg-surface border border-brand-200 text-ink-800 hover:border-brand-400"
                 : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}>
             {m.done && <CheckCircle2 size={11} />}
             {m.title}
@@ -162,7 +166,7 @@ function YearBlock({ y }) {
       </div>
 
       {openMid && (
-        <div className="mt-3 rounded-lg bg-white/70 border border-slate-100 p-3">
+        <div className="mt-3 rounded-lg bg-surface/70 border border-slate-100 p-3">
           {loadingRes ? (
             <p className="text-xs text-slate-400">Loading materials…</p>
           ) : !res?.topics?.length || res.topics.every((t) => !t.resources.length) ? (

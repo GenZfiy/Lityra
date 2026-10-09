@@ -1,4 +1,4 @@
-# LARE Platform — Master Build Plan (Pending Work)
+# Lityra Platform — Master Build Plan (Pending Work)
 
 Durable checklist of everything remaining to reach a complete, working platform.
 Legend: `[ ]` pending · `[~]` in progress · `[x]` done. Each service is built to
@@ -112,7 +112,7 @@ the same bar as Auth: models → schemas → service → routes → factory → 
 ---
 
 ## 🎯 Status summary
-- **26/26 backend services built & verified** (Auth, Gateway, 8 LMS, 10 Drive, 4 shared, 2 AI). ~290 passing smoke checks.
+- **31 backend services are registered** in `backend/services.txt`, plus the API gateway. Historical smoke-check totals in this plan need to be rerun before treating service coverage as current.
 - **Cross-service event bus** live and verified in-process (full LMS chain: assessment→scorecard→year→certificate→inbox/analytics/audit) **and** cross-process (real HTTP ingest).
 - **Frontend**: all student + recruiter + admin/TPO/trainer role experiences; `npm run build` clean (1963 modules).
 - **Remaining (all env-gated, no code work):** provide `ANTHROPIC_API_KEY` for live AI; provide Supabase string to switch Postgres + `alembic upgrade head`; install `redis`/`psycopg`/`pyjwt[crypto]`/`bubblewrap` on the prod host.

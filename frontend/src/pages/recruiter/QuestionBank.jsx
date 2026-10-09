@@ -1,30 +1,29 @@
 import { useState, useEffect } from "react";
 import { Plus, CheckCircle2, Wand2, Trash2, ClipboardList, Code2, ListChecks, AlertTriangle } from "lucide-react";
 import { Card, Badge, Button, Field, Input } from "../../components/ui/primitives.jsx";
-import { PageHeader, Loading, DataSource } from "../../components/ui/states.jsx";
+import { PageHeader, Loading } from "../../components/ui/states.jsx";
 import { useAsync } from "../../hooks/useAsync.js";
 import { api, withFallback } from "../../lib/api.js";
-import { demoQuestions } from "../../lib/demo.js";
+import "../../styles/recruiter-operations-pages.css";
 
 const DIFF_TONE = { easy: "teal", medium: "amber", hard: "rose" };
 
 export default function QuestionBank() {
-  const loaded = useAsync(() => withFallback(api.listQuestions(), demoQuestions), []);
+  const loaded = useAsync(() => withFallback(api.listQuestions(), []), []);
   const [rows, setRows] = useState(null);
   const list = rows ?? loaded.data ?? [];
 
   if (loaded.loading) return <Loading />;
 
   return (
-    <div>
-      <PageHeader
+    <main className="page-composition page-composition-recruiter hire-ops hire-ops--questions"><div>
+      <header className="hire-ops-intro"><div><span className="hire-ops-kicker">Hire · assessment studio</span><PageHeader
         title="Question Bank"
         subtitle="Author items, build a paper, and create an exam"
-        right={<DataSource live={loaded.live} />}
-      />
-      <div className="grid lg:grid-cols-[380px_1fr] gap-6">
+      /></div>{!loaded.live && <span role="status" className="hire-source-state">Live question data is unavailable.</span>}</header>
+      <div className="hire-question-layout">
         <div className="space-y-6">
-          <Authoring onCreated={(q) => setRows([q, ...list])} />
+          <div className="hire-question-authoring"><Authoring onCreated={(q) => setRows([q, ...list])} /></div>
           <ExamBuilder />
         </div>
         <QuestionList
@@ -34,9 +33,9 @@ export default function QuestionBank() {
       </div>
 
       <div className="mt-6">
-        <PaperViewer />
+        <div className="hire-question-paper"><PaperViewer /></div>
       </div>
-    </div>
+    </div></main>
   );
 }
 
@@ -49,31 +48,30 @@ function Authoring({ onCreated }) {
     { id: "b", text: "" },
   ]);
   const [correct, setCorrect] = useState("a");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   async function submit(e) {
     e.preventDefault();
+    setError(""); setBusy(true);
     const body = {
       type: form.type, category: form.category, difficulty: form.difficulty,
       stem: form.stem, weight: Number(form.weight),
       options: form.type === "mcq" ? opts.filter((o) => o.text) : [],
       answer_key: form.type === "mcq" ? { option: correct } : {},
     };
-    let created;
     try {
-      created = await api.createQuestion(body);
-    } catch {
-      created = { id: `q-${Date.now()}`, ...body, status: "draft", version: 1 };
-    }
-    onCreated(created);
-    setForm({ ...form, stem: "" });
-    setOpts([{ id: "a", text: "" }, { id: "b", text: "" }]);
+      const created = await api.createQuestion(body);
+      onCreated(created);
+      setForm({ ...form, stem: "" });
+      setOpts([{ id: "a", text: "" }, { id: "b", text: "" }]);
+    } catch (e) { setError(e?.message || "The question could not be saved."); }
+    finally { setBusy(false); }
   }
 
   return (
-    <Card className="p-6">
-      <h2 className="font-display font-semibold text-ink-900 mb-4 flex items-center gap-2">
-        <Plus size={18} className="text-brand-500" /> Author question
-      </h2>
+    <Card className="hire-question-author-card p-6">
+      <header className="hire-question-form-heading"><span className="hire-ops-kicker">01 · Item authoring</span><h2 className="font-display font-semibold text-ink-900"><Plus size={18} aria-hidden="true" /> Create a question</h2><p>Write a reusable item, define its answer key, and keep its difficulty visible to the team.</p></header>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid grid-cols-3 gap-2">
           {[["type", ["mcq", "multi", "coding", "sql"]], ["category", ["aptitude", "technical", "verbal", "programming"]], ["difficulty", ["easy", "medium", "hard"]]].map(([key, options]) => (
@@ -133,7 +131,8 @@ function Authoring({ onCreated }) {
             )}
           </div>
         )}
-        <Button type="submit" className="w-full"><Plus size={16} /> Add question</Button>
+        {error && <p role="alert" className="hire-question-error">{error}</p>}
+        <Button type="submit" className="w-full" disabled={busy}>{busy ? "Saving…" : <><Plus size={16} /> Add question</>}</Button>
       </form>
     </Card>
   );
@@ -268,11 +267,9 @@ function ExamBuilder() {
   }
 
   return (
-    <Card className="p-6">
-      <h2 className="font-display font-semibold text-ink-900 mb-4 flex items-center gap-2">
-        <Wand2 size={18} className="text-amber-500" /> Build exam
-      </h2>
-      <div className="grid sm:grid-cols-2 gap-3">
+    <Card className="hire-exam-builder p-6">
+      <header className="hire-exam-builder-heading"><span className="hire-ops-kicker">02 · Exam assembly</span><h2 className="font-display font-semibold text-ink-900"><Wand2 size={18} aria-hidden="true" /> Assemble written paper</h2><p>Choose a drive and round, then organize sections and grading rules before publication.</p></header>
+      <div className="hire-exam-settings grid sm:grid-cols-2 gap-3">
         <Field label="Exam title"><Input value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Time (min)"><Input type="number" value={timeMin} onChange={(e) => setTimeMin(e.target.value)} /></Field>
@@ -515,7 +512,7 @@ function PaperViewer() {
   }
 
   return (
-    <Card className="p-6">
+    <Card className="hire-question-paper-viewer p-6">
       <h2 className="font-display font-semibold text-ink-900 mb-1 flex items-center gap-2">
         <ClipboardList size={18} className="text-brand-500" /> View question paper &amp; answers
       </h2>
@@ -614,18 +611,21 @@ function PaperViewer() {
 }
 
 function QuestionList({ list, onActivate }) {
+  const [error, setError] = useState("");
   async function activate(id) {
-    try { await api.activateQuestion(id); } catch { /* demo */ }
-    onActivate(id);
+    setError("");
+    try { await api.activateQuestion(id); onActivate(id); }
+    catch (e) { setError(e?.message || "This question could not be activated."); }
   }
   return (
     <Card className="p-0 overflow-hidden">
-      <div className="p-5 border-b border-slate-100">
-        <h2 className="font-display font-semibold text-ink-900">Questions ({list.length})</h2>
-      </div>
-      <div className="divide-y divide-slate-100">
+      <header className="hire-question-bank-heading p-5 border-b border-slate-100">
+        <div><span className="hire-ops-kicker">Item library</span><h2 className="font-display font-semibold text-ink-900">Questions</h2></div><span className="hire-question-count">{list.length}</span>
+      </header>
+      {error && <p role="alert" className="hire-question-error mx-5 mt-4">{error}</p>}
+      <ol className="hire-question-records divide-y divide-slate-100">
         {list.map((q) => (
-          <div key={q.id} className="p-4 flex items-center gap-3">
+          <li key={q.id} className="hire-question-record p-4 flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-ink-900 truncate">{q.stem}</p>
               <div className="flex gap-1.5 mt-1">
@@ -639,10 +639,10 @@ function QuestionList({ list, onActivate }) {
             ) : (
               <Button size="sm" variant="secondary" onClick={() => activate(q.id)}>Activate</Button>
             )}
-          </div>
+          </li>
         ))}
-        {list.length === 0 && <p className="p-6 text-sm text-slate-400">No questions yet — author one on the left.</p>}
-      </div>
+        {list.length === 0 && <li className="p-6 text-sm text-slate-400">No questions yet — author one on the left.</li>}
+      </ol>
     </Card>
   );
 }

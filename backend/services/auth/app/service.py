@@ -152,34 +152,34 @@ class AuthService:
         s.flush()
         return user
 
-    def mint_drive_token(self, s: Session, email: str, full_name: str | None) -> dict:
-        """Passwordless identity for Drive campus registration. Get-or-create a
-        student account by email and issue tokens — the Student ID is the returning
-        credential, so there is no password. Reuses the platform JWT so the exam /
-        proctor / evaluation services accept the session unchanged."""
+    def provision_drive_user(self, s: Session, email: str, full_name: str | None) -> dict:
+        """Create a passwordless Hire identity without issuing a session.
+
+        The public candidate registration flow must prove email ownership with an
+        OTP before it can obtain access tokens. Existing accounts are never
+        returned to a public registration caller.
+        """
         email = email.lower().strip()
-        # Campus Drive registration is a LARE Hire account (passwordless, Student-ID).
+        # Campus Drive registration is a Lityra Hire account.
         user = s.execute(
             select(User).where(User.email == email, User.product == "hire")
         ).scalar_one_or_none()
-        if user is None:
-            user = User(
-                id=new_id(), email=email, product="hire",
-                # Random unusable password — this account only logs in via Student ID.
-                password_hash=hash_password(secrets.token_urlsafe(24),
-                                            rounds=self.cfg.BCRYPT_ROUNDS),
-                full_name=full_name, tenant_id=self.cfg.DEFAULT_TENANT_ID,
-                email_verified=True, status="active",
-            )
-            s.add(user)
-            s.flush()
-        elif full_name and not user.full_name:
-            user.full_name = full_name
+        if user is not None:
+            raise Conflict("A Lityra Hire account already exists for this email",
+                           code="account_exists")
+        user = User(
+            id=new_id(), email=email, product="hire",
+            password_hash=hash_password(secrets.token_urlsafe(24),
+                                        rounds=self.cfg.BCRYPT_ROUNDS),
+            full_name=full_name, tenant_id=self.cfg.DEFAULT_TENANT_ID,
+            email_verified=False, status="active",
+        )
+        s.add(user)
+        s.flush()
         self.assign_role(s, user.id, "student", None)
         s.flush()
-        tokens = self._issue_tokens(s, user, device="drive")
         return {"user_id": user.id, "email": user.email,
-                "full_name": user.full_name, **tokens}
+                "full_name": user.full_name}
 
     def login(self, s: Session, email: str, password: str, device: str | None,
               product: str = "learn") -> dict:
@@ -321,7 +321,11 @@ class AuthService:
         ).scalar_one_or_none()
         if not user:
             raise Unauthorized("Invalid credentials", code="invalid_credentials")
+        if user.status != "active":
+            raise Forbidden("Account is not active", code="account_inactive")
         self._consume_verification(s, "otp", code, user_id=user.id)
+        # A successfully redeemed code proves control of this email address.
+        user.email_verified = True
         return self._issue_tokens(s, user, device)
 
     def request_password_reset(self, s: Session, email: str, product: str = "learn") -> str | None:

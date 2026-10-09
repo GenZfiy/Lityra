@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -9,7 +10,7 @@ import { PageHeader, Loading } from "../components/ui/states.jsx";
 import { api } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 
-// LARE Learn — Sovereign Learning Wallet. The learner owns a signed, verifiable
+// Lityra Learn — Sovereign Learning Wallet. The learner owns a signed, verifiable
 // snapshot of their proven competence and can share a public verify link.
 export default function Wallet() {
   const { user } = useAuth();
@@ -55,16 +56,16 @@ export default function Wallet() {
     const blob = new Blob([JSON.stringify(cred, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "lare-wallet.json";
+    a.href = url; a.download = "lityra-wallet.json";
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   }
 
-  if (loading) return <Loading />;
+  if (loading) return <Loading label="Loading your credentials…" />;
 
   const vc = cred?.credential || {};
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-wallet"><div>
       <PageHeader
         title="My Learning Wallet"
         subtitle="A signed, verifiable record of what you've proven — yours to own and share. Anyone you send it to can confirm it's authentic, no login required."
@@ -91,13 +92,13 @@ export default function Wallet() {
           </Button>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <section className="wallet-credential-workspace" aria-label="Credential and sharing controls">
           {/* The credential card */}
-          <Card className="p-6 border-brand-200 bg-gradient-to-br from-brand-500/5 to-transparent">
+          <Card className="wallet-credential p-6 border-brand-200 bg-gradient-to-br from-brand-500/5 to-transparent">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-brand-600 flex items-center gap-1.5">
-                  <ShieldCheck size={14} /> LARE Verified Competence
+                  <ShieldCheck size={14} /> Lityra Verified Competence
                 </p>
                 <h2 className="mt-1 font-display text-2xl font-bold text-ink-900">{cred.subject_name}</h2>
                 <p className="text-sm text-slate-500">Issued {(cred.issued_at || "").slice(0, 10)} · {vc.issuer}</p>
@@ -154,14 +155,14 @@ export default function Wallet() {
           </Card>
 
           {/* Share + export */}
-          <Card className="p-6">
+          <Card className="wallet-share-panel p-6">
             <h3 className="font-display font-semibold text-ink-900 mb-3 flex items-center gap-2"><Link2 size={18} className="text-brand-500" /> Share & verify</h3>
             <div className="flex items-center gap-2 rounded-lg border border-slate-200 p-2.5 bg-slate-50">
               <code className="text-sm text-slate-600 truncate flex-1">{verifyUrl}</code>
               <Button size="sm" variant="secondary" onClick={copyLink}><Copy size={14} /> Copy</Button>
               <Button size="sm" variant="ghost" as="a" href={verifyUrl} target="_blank" rel="noreferrer">Open</Button>
             </div>
-            <p className="mt-2 text-xs text-slate-400">Anyone with this link can confirm your credential is authentic and current — no LARE account needed.</p>
+            <p className="mt-2 text-xs text-slate-400">Anyone with this link can confirm your credential is authentic and current — no Lityra account needed.</p>
 
             <div className="mt-4 flex flex-wrap gap-2">
               <Button variant="secondary" onClick={() => api.downloadWalletPdf(id)}><Download size={15} /> Download PDF</Button>
@@ -170,16 +171,15 @@ export default function Wallet() {
               <Button variant="ghost" onClick={revoke} disabled={busy === "revoke"} className="text-rose-600"><Ban size={15} /> Revoke</Button>
             </div>
           </Card>
-        </div>
-      )}
-    </div>
+        </section>)}
+    </div></div>
   );
 }
 
 function Metric({ label, value, tone = "brand" }) {
   const tones = { brand: "text-brand-600", teal: "text-teal-600" };
   return (
-    <div className="rounded-lg bg-white/60 border border-slate-100 p-3 text-center">
+    <div className="rounded-lg bg-surface/60 border border-slate-100 p-3 text-center">
       <p className={`font-display text-2xl font-bold tabular-nums ${tones[tone]}`}>{value ?? 0}</p>
       <p className="text-xs text-slate-400">{label}</p>
     </div>

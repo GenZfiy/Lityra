@@ -194,7 +194,7 @@ def main():
         s.flush()
     print("Practice Worlds seeded: {} created, {} updated ({} scenarios).".format(
         created, updated, len(WORLDS)))
-    print("Learners can play them in LARE Learn -> Practice Worlds.")
+    print("Learners can play them in Lityra Learn -> Practice Worlds.")
 
 
 if __name__ == "__main__":

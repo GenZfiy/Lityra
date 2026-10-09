@@ -1,6 +1,6 @@
 """Candidate business logic: profile, portfolio, résumé parsing, applications.
 
-LARE Drive is a standalone application — candidate data is created here and never
+    Lityra Hire is a standalone application — candidate data is created here and never
 imported from the LMS."""
 from __future__ import annotations
 
@@ -36,9 +36,9 @@ class CandidateService:
         return drives[0]
 
     def _next_student_id(self, s: Session) -> str:
-        """Sequential, readable Student ID: LARE-<year>-0001."""
+        """Sequential, readable Student ID: LITYRA-<year>-0001."""
         year = datetime.now(tz=timezone.utc).year
-        prefix = f"LARE-{year}-"
+        prefix = f"LITYRA-{year}-"
         n = s.execute(select(func.count(Candidate.id)).where(
             Candidate.student_id.like(prefix + "%"))).scalar() or 0
         # Retry a few times in case of a race on the count.
@@ -51,71 +51,68 @@ class CandidateService:
                        code="student_id_alloc")
 
     def attend(self, s: Session, data) -> dict:
-        """Register a walk-in student for the active drive and issue a Student ID."""
+        """Create a pending Hire identity; no session is issued before email OTP."""
         drive = self._active_drive()
         full_name = f"{data.first_name} {data.last_name}".strip()
-        # 1) provision a passwordless platform identity (Auth mints the JWT).
-        ident = _AUTH.post("auth", "/auth/v1/internal/drive-token",
+        if data.phone:
+            dup = s.execute(select(Candidate).where(Candidate.phone == data.phone)).scalar_one_or_none()
+            if dup:
+                raise Conflict("This phone number is already registered.", code="phone_taken")
+        # Auth refuses to reuse an existing account and does not issue tokens.
+        ident = _AUTH.post("auth", "/auth/v1/internal/drive-user",
                            {"email": data.email, "full_name": full_name})
         ident = (ident or {}).get("data") or {}
         user_id = ident.get("user_id")
         if not user_id:
             raise BadRequest("Could not create your registration identity.",
                              code="identity_failed")
-        # 2) store the candidate record (idempotent on the auth user).
-        cand = self.get_or_create(s, user_id)
+        # Store an unverified candidate record. No login token is released until
+        # the user redeems the OTP delivered to this address.
+        cand = Candidate(id=new_id(), user_id=user_id)
+        s.add(cand)
         cand.first_name, cand.last_name = data.first_name, data.last_name
         cand.full_name, cand.email = full_name, data.email
         cand.roll_number = data.roll_number
         if getattr(data, "phone", None):
-            # A phone number identifies one candidate — reject if already used by
-            # a different registration.
-            dup = s.execute(
-                select(Candidate).where(Candidate.phone == data.phone,
-                                        Candidate.user_id != user_id)
-            ).scalar_one_or_none()
-            if dup:
-                raise Conflict("This phone number is already registered.", code="phone_taken")
             cand.phone = data.phone
         if not cand.student_id:
             cand.student_id = self._next_student_id(s)
         s.flush()
         return {
-            "student_id": cand.student_id, "user_id": user_id,
+            "student_id": cand.student_id,
             "full_name": full_name, "email": data.email,
             "roll_number": cand.roll_number,
             "drive": {"id": drive.get("id"), "title": drive.get("title"),
                       "company_name": drive.get("company_name")},
-            "access_token": ident.get("access_token"),
-            "refresh_token": ident.get("refresh_token"),
-            "expires_in": ident.get("expires_in"),
         }, user_id, drive
 
-    def resume(self, s: Session, student_id: str) -> dict:
-        """Return with a Student ID (no password): re-issue a session."""
+    @staticmethod
+    def send_registration_otp(email: str) -> None:
+        _AUTH.post("auth", "/auth/v1/otp/request",
+                   {"email": email, "product": "hire"})
+
+    def request_resume_otp(self, s: Session, student_id: str, email: str) -> None:
+        """Send an OTP only when both the Student ID and registered email match."""
         cand = s.execute(select(Candidate).where(
             Candidate.student_id == student_id.strip().upper())).scalar_one_or_none()
-        if not cand:
-            raise NotFound("No registration found for that Student ID.",
-                           code="student_id_not_found")
-        ident = _AUTH.post("auth", "/auth/v1/internal/drive-token",
-                           {"email": cand.email, "full_name": cand.full_name})
-        ident = (ident or {}).get("data") or {}
-        drive = None
+        if cand and cand.email and cand.email.lower() == email.strip().lower():
+            _AUTH.post("auth", "/auth/v1/otp/request",
+                       {"email": cand.email, "product": "hire"})
+
+    def complete_attend(self, s: Session, user_id: str, product: str) -> dict | None:
+        """Confirm a newly registered candidate after email OTP login."""
+        if product != "hire":
+            raise Conflict("Sign in to Lityra Hire to complete this registration.",
+                           code="wrong_product")
+        cand = s.execute(select(Candidate).where(
+            Candidate.user_id == user_id)).scalar_one_or_none()
+        if not cand or not cand.student_id:
+            raise NotFound("Registration not found for this account.", code="registration_not_found")
         try:
             drive = self._active_drive()
         except Conflict:
-            pass
-        return {
-            "student_id": cand.student_id, "user_id": cand.user_id,
-            "full_name": cand.full_name, "email": cand.email,
-            "roll_number": cand.roll_number,
-            "drive": {"id": drive.get("id"), "title": drive.get("title"),
-                      "company_name": drive.get("company_name")} if drive else None,
-            "access_token": ident.get("access_token"),
-            "refresh_token": ident.get("refresh_token"),
-            "expires_in": ident.get("expires_in"),
-        }
+            drive = None
+        return drive
     def get_or_create(self, s: Session, user_id: str) -> Candidate:
         cand = s.execute(
             select(Candidate).where(Candidate.user_id == user_id)

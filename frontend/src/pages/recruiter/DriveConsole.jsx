@@ -17,6 +17,7 @@ import RoundsTab from "./RoundsTab.jsx";
 import AnalyticsTab from "./AnalyticsTab.jsx";
 import { ReadOut, Ribbon, Attention, AIObservation, SignalCard, band, bandHex, initials, hueFor } from "../../components/drive/grammar.jsx";
 import CommandPalette from "../../components/drive/CommandPalette.jsx";
+import "../../styles/recruiter-operations-pages.css";
 
 /* The Drive as the operating unit. Surfaces are framed around
    State → Context → Evidence → Action, all on the existing real APIs. */
@@ -49,6 +50,7 @@ export default function DriveConsole() {
   const [tab, setTab] = useState("command");
   const [drive, setDrive] = useState(null);
   const [lens, setLens] = useState("recruiter");
+  const [driveError, setDriveError] = useState("");
 
   if (detail.loading) return <Loading />;
   const d = drive || detail.data || {};
@@ -57,30 +59,36 @@ export default function DriveConsole() {
   const visibleTabs = lensDef.tabs;
   const activeTab = visibleTabs.includes(tab) ? tab : lensDef.home;
   const pickLens = (l) => { setLens(l); setTab(LENSES[l].home); };
+  async function openDrive() {
+    setDriveError("");
+    try { await api.openDrive(id); setDrive({ ...d, status: "open" }); }
+    catch (error) { setDriveError(error?.message || "This drive could not be opened."); }
+  }
 
   return (
-    <div>
+    <main className="page-composition page-composition-recruiter hire-ops hire-ops--console"><div>
       <CommandPalette />
       <Link to="/drive/recruiter/drives" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-ink-900 mb-3">
         <ArrowLeft size={16} /> All drives
       </Link>
 
       {/* Mission header — the drive as an operating unit */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-brand-500/[0.04] via-surface to-surface p-5 mb-5">
+      <header className="hire-console-hero relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-brand-500/[0.04] via-surface to-surface p-5 mb-5">
         <div aria-hidden className="absolute -top-16 -right-12 h-44 w-44 rounded-full bg-brand-500/10 blur-3xl pointer-events-none" />
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-              <Target size={13} /> Hiring mission · {d.company_name || "—"}
+              <Target size={13} aria-hidden="true" /> <span>Lityra Hire · Hiring mission · {d.company_name || "—"}</span>
             </div>
             <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-ink-900">{d.title || "Drive"}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-slate-500">
-              <span>{(d.roles || []).length} role{(d.roles || []).length === 1 ? "" : "s"}</span>
-              <span>· {rounds} round{rounds === 1 ? "" : "s"}</span>
-              <span>· <span className="font-mono text-[11px]">Intent, Roles → Candidates → Signals → Evidence → Evaluation → Decisions → Actions → Outcome</span></span>
-            </div>
+            <p className="mt-2 max-w-3xl text-[12.5px] leading-relaxed text-slate-500">Coordinate candidate movement, evaluation evidence, and hiring decisions in one drive workspace.</p>
+            <dl className="hire-console-facts mt-3">
+              <div><dt>Roles</dt><dd>{(d.roles || []).length}</dd></div>
+              <div><dt>Rounds</dt><dd>{rounds}</dd></div>
+              <div className="hire-console-flow"><dt>Operating flow</dt><dd>Intent <span aria-hidden="true">→</span> evidence <span aria-hidden="true">→</span> decision <span aria-hidden="true">→</span> outcome</dd></div>
+            </dl>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="hire-console-controls flex items-center gap-3 shrink-0">
             <label className="flex items-center gap-2 h-9 px-3 rounded-lg border border-slate-200 bg-surface text-[12.5px]" title="Reshape the console for a persona (a view lens, not a permission change)">
               <Eye size={14} className="text-slate-400" />
               <span className="text-slate-400">View as</span>
@@ -90,26 +98,27 @@ export default function DriveConsole() {
             </label>
             <Badge tone={d.status === "open" ? "teal" : "slate"}>{d.status || "draft"}</Badge>
             {d.status !== "open" && (
-              <Button onClick={async () => { try { await api.openDrive(id); } catch { /* keep */ } setDrive({ ...d, status: "open" }); }}>
+              <Button onClick={openDrive}>
                 <Rocket size={17} /> Open drive
               </Button>
             )}
           </div>
         </div>
-      </div>
+      </header>
+      {driveError && <p role="alert" className="hire-drive-error">{driveError}</p>}
 
       {/* Operating tabs — shaped by the active lens */}
-      <div className="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
+      <nav aria-label="Drive workspace sections" className="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
         {visibleTabs.map((tid) => {
           const t = TAB_DEFS[tid]; const Ic = t.icon;
           return (
-            <button key={tid} onClick={() => setTab(tid)}
+            <button key={tid} type="button" aria-current={activeTab === tid ? "page" : undefined} onClick={() => setTab(tid)}
               className={`flex items-center gap-2 px-4 h-11 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${activeTab === tid ? "border-brand-500 text-brand-600" : "border-transparent text-slate-500 hover:text-ink-900"}`}>
               <Ic size={16} /> {t.label}
             </button>
           );
         })}
-      </div>
+      </nav>
 
       {activeTab === "command" && <CommandCenter d={d} id={id} rounds={rounds} go={setTab} />}
       {activeTab === "workspace" && <InterviewerWorkspace d={d} id={id} rounds={rounds} />}
@@ -121,7 +130,7 @@ export default function DriveConsole() {
       {activeTab === "decisions" && <DecisionsView id={id} />}
       {activeTab === "analytics" && <AnalyticsTab id={id} />}
       {activeTab === "configure" && <ConfigureView d={d} id={id} onChange={setDrive} />}
-    </div>
+    </div></main>
   );
 }
 
@@ -227,7 +236,7 @@ function CommandCenter({ d, id, rounds, go }) {
   const observations = realObs.length ? realObs : obs;
 
   return (
-    <div>
+    <div className="hire-console-command">
       <div className="flex items-center justify-end mb-2">
         <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400"><span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse" /> {liveActions ? "Live · streaming" : "Live · auto-refreshing"}</span>
       </div>
@@ -299,7 +308,7 @@ function PipelineView({ d, id, rounds, go }) {
   const focus = sel ? regs.filter((r) => (sel === "selected" ? r.status === "selected" : sel === "pool" ? true : ("r" + (r.current_round || 0)) === sel)) : [];
 
   return (
-    <div>
+    <section className="hire-console-pipeline" aria-label="Candidate pipeline">
       <div className="rounded-2xl border border-slate-200 bg-surface p-4 mb-4"><Ribbon stages={stages} selected={sel} onSelect={setSel} /></div>
       <div className="grid lg:grid-cols-2 gap-4">
         <Card className="p-5">
@@ -329,7 +338,7 @@ function PipelineView({ d, id, rounds, go }) {
           <button className="mt-4 text-[12px] text-brand-600 font-medium" onClick={() => go("candidates")}>Open full candidate intelligence →</button>
         </Card>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -344,6 +353,7 @@ function CandidateIntelligence({ d, id, rounds }) {
   const [compareMode, setCompareMode] = useState(false);
   const [compare, setCompare] = useState([]);
   const [showCmp, setShowCmp] = useState(false);
+  const [actionError, setActionError] = useState("");
   const list = rows ?? regsA.data ?? [];
   const qmap = Object.fromEntries((queueA.data || []).map((x) => [x.candidate_id, x]));
   // Rank by real evidence-backed confidence where it exists; else the readiness heuristic.
@@ -359,15 +369,15 @@ function CandidateIntelligence({ d, id, rounds }) {
   const STATUSES = ["all", "applied", "shortlisted", "in_round", "selected", "rejected"];
 
   function update(cid, patch) { setRows((rows ?? regsA.data ?? []).map((r) => (r.candidate_id === cid ? { ...r, ...patch } : r))); }
-  async function shortlist(cid) { try { await api.shortlist(id, [cid]); } catch { /* keep */ } update(cid, { status: "shortlisted", current_round: 1 }); }
-  async function advance(cid, cur) { try { await api.advance(id, cid); } catch { /* keep */ } const n = (cur || 0) + 1; update(cid, n > rounds ? { status: "selected" } : { status: "in_round", current_round: n }); }
+  async function shortlist(cid) { setActionError(""); try { await api.shortlist(id, [cid]); update(cid, { status: "shortlisted", current_round: 1 }); return true; } catch (error) { setActionError(error?.message || "Candidate could not be shortlisted."); return false; } }
+  async function advance(cid, cur) { setActionError(""); try { await api.advance(id, cid); const n = (cur || 0) + 1; update(cid, n > rounds ? { status: "selected" } : { status: "in_round", current_round: n }); return true; } catch (error) { setActionError(error?.message || "Candidate could not be advanced."); return false; } }
 
   const toggleCmp = (cid) => setCompare((c) => (c.includes(cid) ? c.filter((x) => x !== cid) : c.length >= 3 ? c : [...c, cid]));
   const cardClick = (r) => (compareMode ? toggleCmp(r.candidate_id) : setOpen(r));
   const selectedCands = list.filter((r) => compare.includes(r.candidate_id));
 
   return (
-    <div>
+    <section className="hire-console-candidates" aria-label="Candidate intelligence">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <h2 className="font-display text-lg font-semibold text-ink-900">Candidate Intelligence</h2>
@@ -382,6 +392,7 @@ function CandidateIntelligence({ d, id, rounds }) {
           <select value={statusF} onChange={(e) => setStatusF(e.target.value)} className="h-9 px-2 rounded-md border border-slate-200 text-sm bg-surface capitalize">{STATUSES.map((s) => <option key={s} value={s}>{s === "all" ? "All statuses" : s.replace("_", " ")}</option>)}</select>
         </div>
       </div>
+      {actionError && <p role="alert" className="hire-drive-error">{actionError}</p>}
 
       {filtered.length === 0 ? (
         <Card className="p-10 text-center text-slate-400">{list.length ? "No candidates match your search." : "No candidates have registered yet."}</Card>
@@ -405,7 +416,7 @@ function CandidateIntelligence({ d, id, rounds }) {
         </div>
       )}
 
-      {open && !compareMode && <CandidateDrawer r={open} rounds={rounds} onClose={() => setOpen(null)} onShortlist={shortlist} onAdvance={advance} />}
+      {open && !compareMode && <CandidateDrawer r={open} rounds={rounds} error={actionError} onClose={() => setOpen(null)} onShortlist={shortlist} onAdvance={advance} />}
 
       {compareMode && compare.length > 0 && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-full bg-invert-900 text-white px-4 py-2.5 shadow-xl">
@@ -415,11 +426,11 @@ function CandidateIntelligence({ d, id, rounds }) {
         </div>
       )}
       {showCmp && <ComparePanel cands={selectedCands} rounds={rounds} onClose={() => setShowCmp(false)} />}
-    </div>
+    </section>
   );
 }
 
-function CandidateDrawer({ r, rounds, onClose, onShortlist, onAdvance }) {
+function CandidateDrawer({ r, rounds, error, onClose, onShortlist, onAdvance }) {
   const nm = r.candidate_name || r.candidate_email || r.candidate_id;
   const ready = readiness(r, rounds);
   const [ev, setEv] = useState({ loading: true, skills: [] });
@@ -435,6 +446,7 @@ function CandidateDrawer({ r, rounds, onClose, onShortlist, onAdvance }) {
     <>
       <div className="fixed inset-0 bg-invert-900/50 z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-screen w-[520px] max-w-[94vw] bg-surface border-l border-slate-200 z-50 flex flex-col shadow-2xl">
+        {error && <p role="alert" className="hire-drive-error mx-4 mt-4">{error}</p>}
         <div className="flex items-center gap-3 p-4 border-b border-slate-100">
           <span className="grid place-items-center h-11 w-11 rounded-xl text-white font-bold shrink-0" style={{ background: hueFor(nm) }}>{initials(nm)}</span>
           <div className="flex-1 min-w-0">
@@ -481,9 +493,9 @@ function CandidateDrawer({ r, rounds, onClose, onShortlist, onAdvance }) {
             <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-2">Next action</div>
             <div className="flex gap-2">
               {r.eligible === "no" ? <div className="text-sm text-slate-400">Ineligible under current criteria.</div>
-                : r.status === "applied" ? <Button className="flex-1 justify-center" onClick={() => { onShortlist(r.candidate_id); onClose(); }}>Shortlist candidate</Button>
+                : r.status === "applied" ? <Button className="flex-1 justify-center" onClick={async () => { if (await onShortlist(r.candidate_id)) onClose(); }}>Shortlist candidate</Button>
                   : r.status === "selected" ? <Badge tone="teal"><Check size={13} /> Selected — proceed to offer</Badge>
-                    : <Button className="flex-1 justify-center" onClick={() => { onAdvance(r.candidate_id, r.current_round); onClose(); }}>Advance a round <ChevronRight size={15} /></Button>}
+                    : <Button className="flex-1 justify-center" onClick={async () => { if (await onAdvance(r.candidate_id, r.current_round)) onClose(); }}>Advance a round <ChevronRight size={15} /></Button>}
             </div>
           </div>
         </div>
@@ -544,12 +556,14 @@ function DecisionsView({ id }) {
   const qA = useAsync(() => withFallback(api.decisionQueue(id), []), [id]);
   const regsA = useAsync(() => withFallback(api.driveRegistrations(id), []), [id]);
   const [decided, setDecided] = useState({});
+  const [actionError, setActionError] = useState("");
   const queue = (qA.data || []).filter((x) => !x.decision && !decided[x.candidate_id]);
   const nameOf = (cid) => { const r = (regsA.data || []).find((x) => x.candidate_id === cid); return r?.candidate_name || r?.candidate_email || cid; };
 
   async function decide(cid, verdict) {
-    try { await api.recordDecision({ drive_id: id, candidate_id: cid, verdict }); } catch { /* keep local */ }
-    setDecided((d) => ({ ...d, [cid]: verdict }));
+    setActionError("");
+    try { await api.recordDecision({ drive_id: id, candidate_id: cid, verdict }); setDecided((d) => ({ ...d, [cid]: verdict })); }
+    catch (error) { setActionError(error?.message || "This decision could not be recorded."); }
   }
 
   return (
@@ -559,6 +573,7 @@ function DecisionsView({ id }) {
           <h2 className="font-display text-lg font-semibold text-ink-900">Decision Intelligence</h2>
           <p className="text-[12.5px] text-slate-500">Finalists ranked by evidence‑backed decision confidence — coverage, panel agreement, and what's missing. Recording a decision cites the exact evidence (immutable lineage).</p>
         </div>
+        {actionError && <p role="alert" className="hire-drive-error">{actionError}</p>}
         {qA.loading ? <Loading /> : queue.length === 0 ? (
           <Card className="p-8 text-center text-slate-400">No candidates are decision‑ready yet. Confidence accrues as evidence lands from assessments and interviews.</Card>
         ) : (
@@ -608,7 +623,7 @@ function CalibrationPanel({ id }) {
   if (loading && !(driveA.data || crossA.data)) return null;
   if (!(driveA.data || []).length && !(crossA.data || []).length) return null;
   return (
-    <div>
+    <section className="hire-console-decisions" aria-label="Hiring decisions and results">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="font-display font-semibold text-ink-900 flex items-center gap-2"><Gauge size={17} className="text-slate-400" /> Interviewer calibration</h3>
@@ -644,7 +659,7 @@ function CalibrationPanel({ id }) {
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -657,11 +672,13 @@ function EvidenceLedger({ id }) {
   const nameOf = (cid) => { const r = (regsA.data || []).find((x) => x.candidate_id === cid); return r?.candidate_name || r?.candidate_email || cid; };
   const [resolved, setResolved] = useState(() => new Set());
   const [backfilling, setBackfilling] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   async function backfill() {
-    setBackfilling(true);
-    try { await api.backfillEvidence(id); } catch { /* no-op */ }
-    finally { setBackfilling(false); setNonce((n) => n + 1); }
+    setBackfilling(true); setActionError("");
+    try { await api.backfillEvidence(id); setNonce((n) => n + 1); }
+    catch (error) { setActionError(error?.message || "Evidence could not be backfilled."); }
+    finally { setBackfilling(false); }
   }
 
   if (evA.loading && !evA.data) return <Loading />;
@@ -673,12 +690,14 @@ function EvidenceLedger({ id }) {
   const sources = [...new Set(ledger.map((e) => e.source_type))];
 
   async function reconcile(cid) {
-    try { await api.resolveEvidenceConflict(cid); } catch { /* still hide locally */ }
-    setResolved((r) => new Set(r).add(cid));
+    setActionError("");
+    try { await api.resolveEvidenceConflict(cid); setResolved((r) => new Set(r).add(cid)); }
+    catch (error) { setActionError(error?.message || "This evidence conflict could not be reconciled."); }
   }
 
   return (
-    <div>
+    <section className="hire-console-evidence" aria-label="Evidence ledger">
+      {actionError && <p role="alert" className="hire-drive-error">{actionError}</p>}
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div>
           <h2 className="font-display text-lg font-semibold text-ink-900">Evidence Ledger</h2>
@@ -731,7 +750,7 @@ function EvidenceLedger({ id }) {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -742,18 +761,20 @@ function InterviewerWorkspace({ id }) {
   const nameOf = (cid) => { const r = (regsA.data || []).find((x) => x.candidate_id === cid); return r?.candidate_name || r?.candidate_email || cid; };
   const [rows, setRows] = useState(null);
   const [sel, setSel] = useState(null);
+  const [actionError, setActionError] = useState("");
   const list = rows ?? ivA.data ?? [];
   if (ivA.loading) return <Loading />;
 
   const upsert = (iv) => setRows((prev) => { const base = prev ?? ivA.data ?? []; return base.some((x) => x.id === iv.id) ? base.map((x) => (x.id === iv.id ? { ...x, ...iv } : x)) : [...base, iv]; });
-  async function rate(ivId, score) { try { await api.rateInterview(ivId, { competency: "technical", score }); } catch { /* keep */ } upsert({ id: ivId, avg_rating: score }); }
-  async function decide(ivId, decision) { try { await api.decideInterview(ivId, { decision }); } catch { /* keep */ } upsert({ id: ivId, decision, status: "completed" }); }
+  async function rate(ivId, score) { setActionError(""); try { await api.rateInterview(ivId, { competency: "technical", score }); upsert({ id: ivId, avg_rating: score }); } catch (error) { setActionError(error?.message || "The interview rating could not be saved."); } }
+  async function decide(ivId, decision) { setActionError(""); try { await api.decideInterview(ivId, { decision }); upsert({ id: ivId, decision, status: "completed" }); } catch (error) { setActionError(error?.message || "The interview decision could not be saved."); } }
 
   const pending = list.filter((v) => v.status !== "completed");
   const active = sel ? list.find((x) => x.id === sel) : pending[0] || list[0];
 
   return (
-    <div>
+    <section className="hire-console-workspace" aria-label="Interviewer workspace">
+      {actionError && <p role="alert" className="hire-drive-error">{actionError}</p>}
       <div className="mb-4">
         <h2 className="font-display text-lg font-semibold text-ink-900">Interviewer Workspace</h2>
         <p className="text-[12.5px] text-slate-500">Everything you need to evaluate — candidate context, prior evidence, and structured capture. Live interview data.</p>
@@ -777,7 +798,7 @@ function InterviewerWorkspace({ id }) {
           <div>{active ? <WorkspacePanel iv={active} name={nameOf(active.candidate_id)} driveId={id} onRate={rate} onDecide={decide} /> : <Card className="p-10 text-center text-slate-400">Select an interview.</Card>}</div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 function WorkspacePanel({ iv, name, driveId, onRate, onDecide }) {
@@ -845,14 +866,14 @@ function WorkspacePanel({ iv, name, driveId, onRate, onDecide }) {
 /* ---------- Configure (roles & rounds + eligibility + PPO — existing real APIs) ---------- */
 function ConfigureView({ d, id, onChange }) {
   return (
-    <div className="grid gap-6">
+    <section className="hire-console-configure grid gap-6" aria-label="Drive configuration">
       <Config d={d} id={id} onChange={onChange} />
       <EvaluationModelCard id={id} />
       <div className="grid lg:grid-cols-2 gap-6">
         <Eligibility id={id} />
         <Ppo id={id} />
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -862,6 +883,7 @@ function EvaluationModelCard({ id }) {
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -882,7 +904,9 @@ function EvaluationModelCard({ id }) {
       .filter((w) => w.competency_key);
     if (!clean.length) return;
     setSaving(true);
-    try { await api.setEvaluationModel({ drive_id: id, weights: clean }); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch { /* surfaced by empty state */ }
+    setError("");
+    try { await api.setEvaluationModel({ drive_id: id, weights: clean }); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+    catch (e) { setError(e?.message || "Evaluation model could not be saved."); }
     finally { setSaving(false); }
   }
 
@@ -893,6 +917,7 @@ function EvaluationModelCard({ id }) {
         <span className="text-[11px] text-slate-400">weights normalise automatically</span>
       </div>
       <p className="text-[12.5px] text-slate-500 mb-3">The competencies this drive hires for and their relative weight. Evidence roll-ups and decision confidence use this model.</p>
+      {error && <p role="alert" className="hire-drive-error mb-3">{error}</p>}
       {!loaded ? <div className="text-sm text-slate-400">Loading…</div> : (
         <div className="grid gap-2">
           {weights.length === 0 && <div className="text-[12.5px] text-slate-400 py-2">No model yet — add the competencies that matter for this drive.</div>}
@@ -922,6 +947,7 @@ function Config({ d, id, onChange }) {
   const [stages, setStages] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -934,24 +960,28 @@ function Config({ d, id, onChange }) {
 
   async function addRole(e) {
     e.preventDefault();
+    setError("");
     const skills = parseSkills(role.skillsText);
     const payload = { title: role.title, ctc: role.ctc, positions: Number(role.positions), skills };
-    let created; try { created = await api.addRole(id, payload); } catch { created = { id: `r-${Date.now()}`, ...payload }; }
-    const next = [...roles, created]; setRoles(next); onChange({ ...d, roles: next }); setRole({ title: "", ctc: "", positions: 1, skillsText: "" });
+    try {
+      const created = await api.addRole(id, payload);
+      const next = [...roles, created]; setRoles(next); onChange({ ...d, roles: next }); setRole({ title: "", ctc: "", positions: 1, skillsText: "" });
+    } catch (e) { setError(e?.message || "Role could not be added to this drive."); }
   }
   const addStage = () => setStages((s) => [...s, { type: "aptitude", label: "", optional: false }]);
   const updateStage = (i, patch) => setStages((s) => s.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const removeStage = (i) => setStages((s) => s.filter((_, j) => j !== i));
   const move = (i, dir) => setStages((s) => { const j = i + dir; if (j < 0 || j >= s.length) return s; const c = [...s]; [c[i], c[j]] = [c[j], c[i]]; return c; });
   async function savePipeline() {
-    setSaving(true); setSaved(false);
+    setSaving(true); setSaved(false); setError("");
     const payload = stages.map((s, i) => ({ order: i + 1, type: s.type, label: s.label || s.type, optional: s.optional }));
     try { const wf = await api.setWorkflow(id, payload); onChange({ ...d, rounds: wf }); setSaved(true); setTimeout(() => setSaved(false), 2500); }
-    catch { onChange({ ...d, rounds: payload }); } finally { setSaving(false); }
+    catch (e) { setError(e?.message || "Pipeline could not be saved."); } finally { setSaving(false); }
   }
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
+      {error && <p role="alert" className="hire-drive-error lg:col-span-2">{error}</p>}
       <Card className="p-6">
         <h2 className="font-display font-semibold text-ink-900 mb-4">Roles</h2>
         <div className="space-y-2 mb-4">
@@ -1011,14 +1041,18 @@ function Config({ d, id, onChange }) {
 function Eligibility({ id }) {
   const [form, setForm] = useState({ min_cgpa: 7, branches: "CSE, CSE-AI", max_backlogs: 0, passing_year: 2027, max_age: "" });
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
   async function save(e) {
     e.preventDefault();
+    setError("");
     const body = { min_cgpa: Number(form.min_cgpa), branches: form.branches.split(",").map((b) => b.trim()).filter(Boolean), max_backlogs: Number(form.max_backlogs), passing_year: Number(form.passing_year), max_age: form.max_age ? Number(form.max_age) : null };
-    try { await api.setEligibility(id, body); } catch { /* keep */ } setSaved(true); setTimeout(() => setSaved(false), 2500);
+    try { await api.setEligibility(id, body); setSaved(true); setTimeout(() => setSaved(false), 2500); }
+    catch (e) { setError(e?.message || "Eligibility settings could not be saved."); }
   }
   return (
     <Card className="p-6">
       <h2 className="font-display font-semibold text-ink-900 mb-4">Eligibility criteria</h2>
+      {error && <p role="alert" className="hire-drive-error mb-3">{error}</p>}
       <form onSubmit={save} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Minimum CGPA"><Input type="number" step="0.1" value={form.min_cgpa} onChange={(e) => setForm({ ...form, min_cgpa: e.target.value })} /></Field>
@@ -1038,15 +1072,19 @@ function Eligibility({ id }) {
 function Ppo({ id }) {
   const [form, setForm] = useState({ top_pct: 15, stages: "internal_tech, hr", min_internship_score: 70 });
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
   async function save(e) {
     e.preventDefault();
+    setError("");
     const body = { eligibility: { top_pct: Number(form.top_pct) }, stages: form.stages.split(",").map((s) => s.trim()).filter(Boolean), conversion_criteria: { min_internship_score: Number(form.min_internship_score) } };
-    try { await api.setPpo(id, body); } catch { /* keep */ } setSaved(true); setTimeout(() => setSaved(false), 2500);
+    try { await api.setPpo(id, body); setSaved(true); setTimeout(() => setSaved(false), 2500); }
+    catch (e) { setError(e?.message || "PPO settings could not be saved."); }
   }
   return (
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-1"><Award size={18} className="text-amber-500" /><h2 className="font-display font-semibold text-ink-900">PPO pipeline</h2></div>
-      <p className="text-sm text-slate-500 mb-4">Pre-Placement Offer track with Lare Consulting and Technologies Pvt. Ltd.</p>
+      <p className="text-sm text-slate-500 mb-4">Pre-Placement Offer track with GenZify.</p>
+      {error && <p role="alert" className="hire-drive-error mb-3">{error}</p>}
       <form onSubmit={save} className="space-y-4">
         <Field label="Eligibility — top % by assessment score"><Input type="number" value={form.top_pct} onChange={(e) => setForm({ ...form, top_pct: e.target.value })} /></Field>
         <Field label="Selection stages (comma-separated)"><Input value={form.stages} onChange={(e) => setForm({ ...form, stages: e.target.value })} /></Field>

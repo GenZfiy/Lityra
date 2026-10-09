@@ -1,3 +1,4 @@
+import "../../styles/institution-operations-pages.css";
 import { useEffect, useMemo, useState } from "react";
 import {
   Library, Video, FileText, Presentation, BookOpen, Code2, Link2, Plus, X,
@@ -79,7 +80,7 @@ export default function ContentStudio({ embedded = false }) {
   if (loading) return <Loading />;
 
   return (
-    <div>
+    <div className="page-composition page-composition-institution institution-ops institution-ops-content"><div>
       {!embedded && (
         <PageHeader
           title="Content Studio"
@@ -87,6 +88,11 @@ export default function ContentStudio({ embedded = false }) {
         />
       )}
       {err && <div className="rounded-md bg-rose-500/10 text-rose-600 text-sm px-3.5 py-2.5 mb-4">{err}</div>}
+
+      <section className="content-studio-context" aria-label="Selected content location">
+        <div><span>AUTHORING LOCATION</span><h2>{module?.title || tree?.name || "Choose a module"}</h2><p>{curId ? curricula.find((c) => c.id === curId)?.name : "No curriculum selected"}{yearNo ? ` · Year ${yearNo}` : ""}{module?.branch_scope ? ` · ${audienceLabel(module.branch_scope)}` : ""}</p></div>
+        <div className="content-context-steps"><span className={tree ? "is-ready" : ""}>01 <small>Roadmap</small></span><span className={year ? "is-ready" : ""}>02 <small>Year</small></span><span className={module ? "is-ready" : ""}>03 <small>Module</small></span><span className={lessonId ? "is-ready" : ""}>04 <small>Topic</small></span></div>
+      </section>
 
       {/* Curriculum + year selectors */}
       <div className="flex flex-wrap items-end gap-3 mb-5">
@@ -141,7 +147,7 @@ export default function ContentStudio({ embedded = false }) {
           )}
         </div>
       )}
-    </div>
+    </div></div>
   );
 }
 
@@ -245,7 +251,7 @@ function AddResource({ onAdd, setErr }) {
           return (
             <button key={t.key} onClick={() => setType(t.key)}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition
-                ${type === t.key ? "border-brand-400 bg-white text-brand-700" : "border-slate-200 text-slate-500 hover:bg-white"}`}>
+                ${type === t.key ? "border-brand-400 bg-surface text-brand-700" : "border-slate-200 text-slate-500 hover:bg-surface"}`}>
               <Icon size={13} /> {t.label}
             </button>
           );

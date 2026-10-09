@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useState } from "react";
 import { Bell, Mail, ShieldCheck, MailCheck, CheckCircle2 } from "lucide-react";
 import { Card, Badge, Button } from "../components/ui/primitives.jsx";
@@ -26,7 +27,7 @@ export default function Settings() {
   }
 
   return (
-    <div>
+    <div className="page-composition page-composition-account learner-screen-settings"><div>
       <PageHeader title="Settings" subtitle="Manage your account and notifications" />
       {flash && (
         <div className="mb-5 rounded-md bg-brand-500/10 text-brand-700 p-3 text-sm flex items-center gap-2">
@@ -34,8 +35,8 @@ export default function Settings() {
         </div>
       )}
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="p-6">
+      <div className="settings-workbench grid lg:grid-cols-2 gap-6">
+        <Card className="settings-panel settings-notifications p-6">
           <h2 className="font-display font-semibold text-ink-900 mb-4 flex items-center gap-2">
             <Bell size={18} className="text-brand-500" /> Notification preferences
           </h2>
@@ -61,7 +62,7 @@ export default function Settings() {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="settings-panel settings-account p-6">
           <h2 className="font-display font-semibold text-ink-900 mb-4 flex items-center gap-2">
             <ShieldCheck size={18} className="text-teal-500" /> Account
           </h2>
@@ -87,7 +88,7 @@ export default function Settings() {
           </div>
         </Card>
       </div>
-    </div>
+    </div></div>
   );
 }
 

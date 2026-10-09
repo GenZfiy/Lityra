@@ -1,9 +1,9 @@
-# LARE Unified Skilling & Recruitment Platform — Documentation
+# Lityra Unified Skilling & Recruitment Platform — Documentation
 
 Production-level SRS for a **single platform** with two major applications sharing one microservices backbone (Python Flask, React + Vite + Tailwind, Supabase PostgreSQL, JWT, AI via Claude `claude-opus-4-8`). **No Docker** — each service runs as an independent Gunicorn process under systemd behind Nginx.
 
-- **LARE LMS** — AI-integrated, gamified Learning Management System delivering the 4-Year Training & Placement Programme; produces the "best college" readiness analytics.
-- **LARE Drive** — Online Campus Recruitment & Assessment (drive conducting) platform: proctored exams, coding, evaluation, interviews, offers/PPO.
+- **Lityra LMS** — AI-integrated, gamified Learning Management System delivering the 4-Year Training & Placement Programme; produces the "best college" readiness analytics.
+- **Lityra Drive** — Online Campus Recruitment & Assessment (drive conducting) platform: proctored exams, coding, evaluation, interviews, offers/PPO.
 
 ## Start here
 → **[Master SRS](SRS/00-SRS-Master.md)** — scope, architecture, standards, deployment, traceability, and the full service index.
@@ -49,4 +49,4 @@ Production-level SRS for a **single platform** with two major applications shari
 | Result & Offer | [result-service.md](SRS/recruitment-services/result-service.md) |
 
 ---
-*Confidential — LARE IT Cloud Solutions.*
+*Confidential — GenZify — Engineering Human Potential Through Technology.*

@@ -1,7 +1,7 @@
 // Reusable premium 3D decoration kit — drop into any surface for depth.
 // Pure CSS/framer 3D (no WebGL): gradient spheres with real highlight/shadow,
 // a cursor-tilt hook for cards, and gradient brand-logo tiles.
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
 
 const GRAD = {
   amber: "radial-gradient(circle at 32% 28%, #fde68a, #f59e0b 52%, #b45309 100%)",
@@ -14,11 +14,12 @@ const shadow = (c) => `0 24px 48px -14px rgba(${RGB[c]},.5), inset -5px -7px 14p
 
 // A single floating 3D sphere.
 export function Sphere({ color = "amber", size = 80, className = "", float = 12, delay = 0, z = 0 }) {
+  const reduceMotion = useReducedMotion();
   return (
     <motion.div
       aria-hidden
-      animate={{ y: [0, -float, 0] }}
-      transition={{ repeat: Infinity, duration: 5 + delay, ease: "easeInOut", delay }}
+      animate={reduceMotion ? { y: 0 } : { y: [0, -float, 0] }}
+      transition={reduceMotion ? { duration: 0 } : { repeat: Infinity, duration: 5 + delay, ease: "easeInOut", delay }}
       style={{ width: size, height: size, background: GRAD[color], boxShadow: shadow(color), z }}
       className={`rounded-full pointer-events-none ${className}`}
     />
@@ -44,11 +45,13 @@ export function Orbs({ className = "", tone = "mixed" }) {
 // Cursor-following 3D tilt for a card. Spread the returned handlers on a wrapper
 // and apply {rotX,rotY} to a motion element with transformPerspective + preserve-3d.
 export function useTilt(strength = 14) {
+  const reduceMotion = useReducedMotion();
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
   const rotX = useSpring(useTransform(my, [-0.5, 0.5], [strength * 0.7, -strength * 0.7]), { stiffness: 150, damping: 18 });
   const rotY = useSpring(useTransform(mx, [-0.5, 0.5], [-strength, strength]), { stiffness: 150, damping: 18 });
   const onTilt = (e) => {
+    if (reduceMotion) return;
     const r = e.currentTarget.getBoundingClientRect();
     mx.set((e.clientX - r.left) / r.width - 0.5);
     my.set((e.clientY - r.top) / r.height - 0.5);

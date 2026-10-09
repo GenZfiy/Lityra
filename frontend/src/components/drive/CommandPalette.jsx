@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Search, Command, Building2, ListChecks, Home } from "lucide-react";
 import { api } from "../../lib/api.js";
 
-// ⌘K command palette for the LARE Drive recruiter area. Self-contained: mounts a
+// ⌘K command palette for the Lityra Drive recruiter area. Self-contained: mounts a
 // window keydown listener only where rendered (recruiter Drive pages), so it
-// never affects LARE Learn. Real data — jumps to actual drives from api.drives().
+// never affects Lityra Learn. Real data — jumps to actual drives from api.drives().
 export default function CommandPalette() {
   const nav = useNavigate();
   const [open, setOpen] = useState(false);

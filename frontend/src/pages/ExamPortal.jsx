@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -314,7 +315,7 @@ export default function ExamPortal() {
   }
 
   if (live) return <Runner live={live} onExit={() => nav("/drive")} />;
-  return <Instructions onAgree={begin} onBack={() => nav("/drive")} error={error} starting={starting} />;
+  return <div className="page-composition page-composition-candidate learner-screen-exam-portal"><Instructions onAgree={begin} onBack={() => nav("/drive")} error={error} starting={starting} /></div>;
 }
 
 const DOS = [
@@ -483,7 +484,7 @@ function Runner({ exam: demoExam, live, onExit }) {
         : submitted.reason === "proctor" ? "Auto-submitted due to integrity violations."
           : "Your responses were recorded.";
     return (
-      <div className="max-w-md mx-auto">
+      <div className="page-composition page-composition-candidate exam-result-page max-w-md mx-auto">
         <Card className="p-8 text-center">
           <span className={`grid place-items-center h-14 w-14 rounded-2xl mx-auto mb-4 ${
             submitted.reason === "proctor" ? "bg-rose-500/10 text-rose-600" : "bg-teal-500/12 text-teal-600"
@@ -507,7 +508,7 @@ function Runner({ exam: demoExam, live, onExit }) {
   const questions = section.questions || [];
 
   return (
-    <div className="min-h-[70vh]">
+    <div className="page-composition page-composition-candidate exam-runner min-h-[70vh]">
       {/* Proctor toast */}
       {toast && (
         <div className="fixed top-20 right-6 z-50 flex items-center gap-2 rounded-md bg-rose-500 text-white text-sm px-4 py-2.5 shadow-lift">

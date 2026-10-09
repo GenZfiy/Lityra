@@ -1,4 +1,4 @@
-# LARE Platform — Enterprise Requirements Tracker
+# Lityra Platform — Enterprise Requirements Tracker
 
 Status of the 7 spec gaps + the ~35 new enterprise requirements.
 Legend: ✅ done & verified · 🟡 partial · 🔜 staged (planned, not built)

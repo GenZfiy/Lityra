@@ -6,12 +6,13 @@ import { Button, Field, Input } from "../components/ui/primitives.jsx";
 import { useAuth } from "../lib/auth.jsx";
 import { api } from "../lib/api.js";
 
-const NAME = { learn: "LARE Learn", hire: "LARE Hire" };
+const NAME = { learn: "Lityra Learn", hire: "Lityra Hire" };
 
-export default function Login({ product = "learn" }) {
+export default function Login({ product = "learn", audience = "" }) {
   const { login, loginOtp } = useAuth();
   const nav = useNavigate();
-  const home = product === "hire" ? "/drive" : "/lms";
+  const isTrainerLogin = audience === "trainer";
+  const home = isTrainerLogin ? "/lms/trainer" : product === "hire" ? "/drive" : "/lms";
   const registerTo = product === "hire" ? "/hire/register" : "/learn/register";
 
   const [mode, setMode] = useState("password"); // password | otp
@@ -56,16 +57,19 @@ export default function Login({ product = "learn" }) {
   return (
     <AuthLayout
       product={product}
-      title={`Sign in to ${NAME[product]}`}
-      subtitle={mode === "otp"
+      title={isTrainerLogin ? "Trainer sign in" : `Sign in to ${NAME[product]}`}
+      subtitle={isTrainerLogin
+        ? "Sign in with your assigned trainer account to open the faculty workspace."
+        : mode === "otp"
         ? "We'll email you a one-time code — no password needed."
         : "Separate account per app — this signs you into this product only."}
       footer={
         <>
-          New here?{" "}
-          <Link to={registerTo} className="font-semibold text-brand-600 hover:underline">
-            Create a {NAME[product]} account
-          </Link>
+          {isTrainerLogin ? (
+            <>Trainer access is assigned by your institution administrator. <Link to="/learn/login" className="font-semibold text-brand-600 hover:underline">Learn sign in</Link></>
+          ) : (
+            <>New here?{" "}<Link to={registerTo} className="font-semibold text-brand-600 hover:underline">Create a {NAME[product]} account</Link></>
+          )}
         </>
       }
     >
@@ -91,13 +95,10 @@ export default function Login({ product = "learn" }) {
           <Button type="submit" size="lg" className="w-full" disabled={busy}>
             <LogIn size={18} /> {busy ? "Signing in…" : "Sign in"}
           </Button>
-          {/* Passwordless code sign-in — LARE Learn only. */}
-          {product === "learn" && (
-            <button type="button" onClick={() => switchMode("otp")}
-              className="w-full text-sm text-slate-500 hover:text-ink-900 flex items-center justify-center gap-1.5">
-              <KeyRound size={14} /> Sign in with a code instead
-            </button>
-          )}
+          <button type="button" onClick={() => switchMode("otp")}
+            className="w-full text-sm text-slate-500 hover:text-ink-900 flex items-center justify-center gap-1.5">
+            <KeyRound size={14} /> Sign in with a code instead
+          </button>
         </form>
       ) : (
         <div className="space-y-4">

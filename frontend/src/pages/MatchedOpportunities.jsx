@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -7,7 +8,7 @@ import { Card, Badge, Button } from "../components/ui/primitives.jsx";
 import { PageHeader, Loading, EmptyState } from "../components/ui/states.jsx";
 import { api } from "../lib/api.js";
 
-// LARE Hire — Skills-to-Opportunity (Hire domain only). Ranks OPEN drives by how
+// Lityra Hire — Skills-to-Opportunity (Hire domain only). Ranks OPEN drives by how
 // well the candidate's drive-exam skills match the roles. Uses only Hire data;
 // no LMS content appears here.
 export default function MatchedOpportunities() {
@@ -23,13 +24,13 @@ export default function MatchedOpportunities() {
     })();
   }, []);
 
-  if (loading) return <Loading />;
+  if (loading) return <Loading label="Finding matching opportunities…" />;
 
   const matches = data?.matches || [];
   const unspecified = data?.unspecified || [];
 
   return (
-    <div>
+    <div className="page-composition page-composition-candidate learner-screen-opportunities"><div>
       <PageHeader
         title="Matched Opportunities"
         subtitle="Open drives ranked by how well your skills fit each role — with exactly which skills matched and where the gaps are."
@@ -47,7 +48,7 @@ export default function MatchedOpportunities() {
         <EmptyState title="No open drives right now"
           hint="When companies open drives, the best-matched ones show up here first." />
       ) : (
-        <div className="space-y-5">
+        <section className="opportunity-matchboard space-y-5" aria-label="Matched open drives">
           {matches.map((d) => <MatchCard key={d.drive_id} d={d} />)}
 
           {unspecified.length > 0 && (
@@ -63,10 +64,9 @@ export default function MatchedOpportunities() {
                 ))}
               </div>
             </div>
-          )}
-        </div>
+          )}</section>
       )}
-    </div>
+    </div></div>
   );
 }
 

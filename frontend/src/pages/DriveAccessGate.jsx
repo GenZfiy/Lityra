@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { KeyRound, ShieldCheck, LogOut, ArrowRight, Briefcase } from "lucide-react";
@@ -7,7 +8,7 @@ import { Orbs } from "../components/ui/Decor.jsx";
 import { useAuth } from "../lib/auth.jsx";
 import { api, accessGrant } from "../lib/api.js";
 
-// LARE Hire Access Gate. A signed-in candidate must present their Drive Access
+// Lityra Hire Access Gate. A signed-in candidate must present their Drive Access
 // ID to enter a specific recruitment drive — they can only access that drive.
 export default function DriveAccessGate() {
   const { user, logout } = useAuth();
@@ -34,12 +35,12 @@ export default function DriveAccessGate() {
   const firstName = (user?.full_name || user?.email || "there").split(/[\s@]/)[0];
 
   return (
-    <div className="min-h-screen grid place-items-center bg-invert-900 px-4 relative overflow-hidden">
+    <div className="page-composition page-composition-gate learner-screen-hire-gate"><div className="min-h-screen grid place-items-center bg-invert-900 px-4 relative overflow-hidden">
       <div className="bg-grid absolute inset-0 opacity-[0.12]" />
       <Orbs tone="warm" className="opacity-70" />
       <div className="relative w-full max-w-md">
         <div className="flex justify-center mb-6"><Logo dark size={110} /></div>
-        <Card className="p-8">
+        <Card className="gate-access-card p-8">
           <span className="grid place-items-center h-14 w-14 rounded-2xl bg-amber-500/10 text-amber-600 mb-4">
             <Briefcase size={26} />
           </span>
@@ -59,7 +60,7 @@ export default function DriveAccessGate() {
               <p className="text-xs text-slate-500 mt-2">Opening your drive…</p>
             </div>
           ) : (
-            <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
+            <form onSubmit={submit} className="gate-code-form mt-6 space-y-4" noValidate>
               {error && (
                 <div className="rounded-md bg-rose-500/10 text-rose-600 text-sm px-3.5 py-2.5">{error}</div>
               )}
@@ -90,6 +91,6 @@ export default function DriveAccessGate() {
           Don't have an Access ID? Contact the recruiter or your placement coordinator.
         </p>
       </div>
-    </div>
+    </div></div>
   );
 }

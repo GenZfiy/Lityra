@@ -1,6 +1,6 @@
 # LARE Platform — Deployment & Productionization Runbook
 
-No Docker. Each of the 26 services runs as its own Gunicorn process behind Nginx,
+No Docker. Each of the 31 services runs as its own Gunicorn process behind Nginx,
 managed by systemd. SQLite in dev; Supabase Postgres in production.
 
 ## 0. Topology
@@ -14,7 +14,7 @@ managed by systemd. SQLite in dev; Supabase Postgres in production.
 ## 1. Local / staging (SQLite, HTTP bus)
 ```bash
 cd backend
-./run-all.ps1            # init-db + serve all 26 services + gateway
+./run-all.ps1            # init-db + serve all 31 services + gateway
 ./health.ps1             # poll every /health
 ./stop-all.ps1
 ```
@@ -90,7 +90,7 @@ Notification adapters (stdlib only):
 sudo cp deploy/lare@.service /etc/systemd/system/
 # /etc/lare/lare.env  -> JWT_*, INTERNAL_JWT_SECRET, DATABASE_URL, REDIS_URL, provider creds
 # /etc/lare/ports.env -> PORT_auth=8001 ... PORT_gateway=8000
-sudo systemctl enable --now lare@auth lare@gateway lare@exam ...   # all 26
+sudo systemctl enable --now lare@auth lare@gateway lare@exam ...   # all 31 services + gateway
 sudo cp deploy/nginx.conf /etc/nginx/sites-available/lare && sudo nginx -t && sudo systemctl reload nginx
 ```
 Gunicorn config: `deploy/gunicorn.conf.py`.

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Trophy, Plus, Trash2, CheckCircle2, Rocket, Users, Download, Search, BadgeCheck, X } from "lucide-react";
 import { Card, Badge, Button, Input } from "../../components/ui/primitives.jsx";
 import { api } from "../../lib/api.js";
+import "../../styles/recruiter-operations-pages.css";
 
 // Round-by-round marks sheet. Round 1 (written) is auto-seeded from applicants and
 // admin-editable; later rounds (JAM/GD/Interview) are scored by the panel. Cleared
@@ -11,17 +12,20 @@ export default function RoundsTab({ id }) {
   const [order, setOrder] = useState(1);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [addId, setAddId] = useState("");
   const [flash, setFlash] = useState(null);
+  const [flashError, setFlashError] = useState(false);
   const [dl, setDl] = useState("");
   const [sq, setSq] = useState("");
   const [filterC, setFilterC] = useState("all");
   const [skillsFor, setSkillsFor] = useState(null);
+  const announce = (message, isError = false) => { setFlash(message); setFlashError(isError); };
 
   async function download(cleared) {
     setDl(cleared ? "cleared" : "all");
     try { await api.downloadRoundXlsx(id, order, cleared); }
-    catch (e) { setFlash(e?.message || "Export failed."); }
+    catch (e) { announce(e?.message || "Export failed.", true); }
     finally { setDl(""); }
   }
 
@@ -32,10 +36,10 @@ export default function RoundsTab({ id }) {
     )) return;
     const wasOrder = order;
     try { await api.deleteRound(id, order); }
-    catch (e) { setFlash(e?.message || "Could not delete the round."); return; }
+    catch (e) { announce(e?.message || "Could not delete the round.", true); return; }
     const wf = await api.getWorkflow(id).catch(() => []);
     setRounds(wf || []);
-    setFlash(`Deleted "${label}" — pipeline updated.`);
+    announce(`Deleted "${label}" — pipeline updated.`);
     setOrder(1);
     if (wasOrder === 1) load();
   }
@@ -50,10 +54,10 @@ export default function RoundsTab({ id }) {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id, order]);
 
   async function load() {
-    setLoading(true);
-    const d = await api.roundScores(id, order).catch(() => ({ scores: [], round: { label: `Round ${order}` } }));
-    setData(d);
-    setLoading(false);
+    setLoading(true); setLoadError("");
+    try { setData(await api.roundScores(id, order)); }
+    catch (e) { setData({ scores: [], round: { label: `Round ${order}` } }); setLoadError(e?.message || "Round marks could not be loaded."); }
+    finally { setLoading(false); }
   }
 
   function patchLocal(cid, patch) {
@@ -61,22 +65,20 @@ export default function RoundsTab({ id }) {
   }
 
   async function save(cid, body) {
-    try { await api.setRoundScore(id, order, { candidate_id: cid, ...body }); }
-    catch { /* keep optimistic */ }
+    try { await api.setRoundScore(id, order, { candidate_id: cid, ...body }); patchLocal(cid, body); }
+    catch (e) { announce(e?.message || "Candidate score could not be saved.", true); }
   }
 
   async function add() {
     const cid = addId.trim();
     if (!cid) return;
-    try { await api.addRoundCandidate(id, order, cid); } catch { /* demo */ }
-    setAddId("");
-    setFlash(`Added ${cid}`);
-    load();
+    try { await api.addRoundCandidate(id, order, cid); setAddId(""); announce(`Added ${cid}`); load(); }
+    catch (e) { announce(e?.message || `Could not add ${cid} to this round.`, true); }
   }
 
   async function remove(cid) {
-    try { await api.removeRoundCandidate(id, order, cid); } catch { /* demo */ }
-    patchLocalRemove(cid);
+    try { await api.removeRoundCandidate(id, order, cid); patchLocalRemove(cid); }
+    catch (e) { announce(e?.message || "Candidate could not be removed from this round.", true); }
   }
   function patchLocalRemove(cid) {
     setData((d) => ({ ...d, scores: d.scores.filter((s) => s.candidate_id !== cid) }));
@@ -86,8 +88,9 @@ export default function RoundsTab({ id }) {
     const cleared = (data?.scores || []).filter((s) => s.cleared).length;
     if (!window.confirm(`Publish this round? ${cleared} cleared candidate(s) will advance to the next round; the rest will be marked rejected.`)) return;
     let res;
-    try { res = await api.publishRound(id, order); } catch { res = { advanced: cleared }; }
-    setFlash(res.final_round
+    try { res = await api.publishRound(id, order); }
+    catch (e) { announce(e?.message || "Round could not be published.", true); return; }
+    announce(res.final_round
       ? `Final round published — ${res.advanced} selected.`
       : `Published — ${res.advanced} advanced to round ${res.next_round}.`);
     load();
@@ -103,14 +106,18 @@ export default function RoundsTab({ id }) {
   });
   const roundLabel = data?.round?.label || `Round ${order}`;
   const isWritten = ["aptitude", "coding", "verbal", "technical", "sql"].includes(data?.round?.type);
+  const clearedCount = scores.filter((score) => score.cleared).length;
+  const markedCount = scores.filter((score) => score.marks !== null && score.marks !== undefined).length;
 
   return (
-    <div>
+    <section className="page-composition page-composition-recruiter-detail hire-ops hire-ops--rounds"><div>
       {/* Round selector from the pipeline */}
-      <div className="flex flex-wrap gap-2 mb-5">
+      <nav className="hire-round-selector" aria-label="Select recruitment round">
         {(rounds.length ? rounds : [{ order: 1, label: "Round 1" }]).map((r) => (
           <button
             key={r.order}
+            type="button"
+            aria-current={order === r.order ? "step" : undefined}
             onClick={() => setOrder(r.order)}
             className={`h-9 px-4 rounded-md text-sm font-medium transition-colors ${
               order === r.order ? "bg-invert-900 text-white" : "bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -119,25 +126,26 @@ export default function RoundsTab({ id }) {
             {r.order}. {r.label || r.type}{r.optional ? " (opt)" : ""}
           </button>
         ))}
-      </div>
+      </nav>
 
       {flash && (
-        <div className="mb-4 rounded-md bg-teal-500/10 text-teal-700 p-3 text-sm flex items-center gap-2">
-          <CheckCircle2 size={15} /> {flash}
+        <div role={flashError ? "alert" : "status"} className={`hire-round-notice mb-4 rounded-md p-3 text-sm flex items-center gap-2 ${flashError ? "is-error" : "is-success"}`}>
+          {flashError ? <X size={15} /> : <CheckCircle2 size={15} />} {flash}
         </div>
       )}
+      {loadError && <p role="alert" className="hire-drive-error mb-4">{loadError}</p>}
 
-      <Card className="p-0 overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+      <Card className="hire-ops-surface p-0 overflow-hidden">
+        <header className="hire-round-sheet-header p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-display font-semibold text-ink-900 flex items-center gap-2">
-              <Trophy size={18} className="text-amber-500" /> {roundLabel} — marks sheet
-            </h2>
+            <span className="hire-ops-kicker">Assessment operations · round {order}</span>
+            <h2 className="font-display font-semibold text-ink-900 flex items-center gap-2"><Trophy size={18} className="text-amber-500" /> {roundLabel}</h2>
             <p className="text-xs text-slate-400 mt-0.5">
               {isWritten
                 ? "Written round — auto-analysed from the portal; edit marks, clear/reject, add referred candidates."
                 : "Panel round — enter each candidate's marks and remarks, then publish."}
             </p>
+            <dl className="hire-round-readouts"><div><dt>On sheet</dt><dd>{scores.length}</dd></div><div><dt>Marks entered</dt><dd>{markedCount}</dd></div><div><dt>Cleared</dt><dd>{clearedCount}</dd></div></dl>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => download(false)} disabled={!scores.length || !!dl}>
@@ -154,7 +162,7 @@ export default function RoundsTab({ id }) {
               <Rocket size={16} /> Publish round
             </Button>
           </div>
-        </div>
+        </header>
 
         {scores.length > 0 && (
           <div className="px-5 py-3 border-b border-slate-100 flex flex-wrap items-center gap-2">
@@ -175,14 +183,15 @@ export default function RoundsTab({ id }) {
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
+            <caption className="sr-only">Candidate results and marks for {roundLabel}</caption>
             <thead className="text-left text-slate-400 border-b border-slate-100">
               <tr>
-                <th className="py-2.5 px-4 font-medium">Candidate</th>
-                <th className="py-2.5 px-4 font-medium w-28">Marks</th>
-                <th className="py-2.5 px-4 font-medium w-24">Out of</th>
-                <th className="py-2.5 px-4 font-medium">Remarks</th>
-                <th className="py-2.5 px-4 font-medium w-24">Cleared</th>
-                <th className="py-2.5 px-4 font-medium w-10"></th>
+                <th scope="col" className="py-2.5 px-4 font-medium">Candidate evidence</th>
+                <th scope="col" className="py-2.5 px-4 font-medium w-28">Marks</th>
+                <th scope="col" className="py-2.5 px-4 font-medium w-24">Out of</th>
+                <th scope="col" className="py-2.5 px-4 font-medium">Panel remarks</th>
+                <th scope="col" className="py-2.5 px-4 font-medium w-24">Decision</th>
+                <th scope="col" className="py-2.5 px-4 font-medium w-10"><span className="sr-only">Remove candidate</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -231,27 +240,29 @@ export default function RoundsTab({ id }) {
                     </button>
                   </td>
                   <td className="py-2 px-4">
-                    <Input type="number" defaultValue={s.marks} className="h-9"
-                      onBlur={(e) => { const v = Number(e.target.value); patchLocal(s.candidate_id, { marks: v }); save(s.candidate_id, { marks: v }); }} />
+                    <Input type="number" min="0" aria-label={`Marks for ${s.candidate_name || s.candidate_email || s.candidate_id}`} defaultValue={s.marks} className="h-9"
+                      onBlur={(e) => { const v = Number(e.target.value); save(s.candidate_id, { marks: v }); }} />
                   </td>
                   <td className="py-2 px-4">
-                    <Input type="number" defaultValue={s.max_marks} className="h-9"
-                      onBlur={(e) => { const v = Number(e.target.value); patchLocal(s.candidate_id, { max_marks: v }); save(s.candidate_id, { max_marks: v }); }} />
+                    <Input type="number" min="1" aria-label={`Maximum marks for ${s.candidate_name || s.candidate_email || s.candidate_id}`} defaultValue={s.max_marks} className="h-9"
+                      onBlur={(e) => { const v = Number(e.target.value); save(s.candidate_id, { max_marks: v }); }} />
                   </td>
                   <td className="py-2 px-4">
-                    <Input defaultValue={s.remarks || ""} placeholder="—" className="h-9"
+                    <Input aria-label={`Remarks for ${s.candidate_name || s.candidate_email || s.candidate_id}`} defaultValue={s.remarks || ""} placeholder="Add panel notes" className="h-9"
                       onBlur={(e) => save(s.candidate_id, { remarks: e.target.value })} />
                   </td>
                   <td className="py-2 px-4">
                     <button
-                      onClick={() => { const v = !s.cleared; patchLocal(s.candidate_id, { cleared: v }); save(s.candidate_id, { cleared: v }); }}
+                      type="button"
+                      aria-pressed={!!s.cleared}
+                      onClick={() => { const v = !s.cleared; save(s.candidate_id, { cleared: v }); }}
                       className={`h-8 px-3 rounded-md text-xs font-semibold ${s.cleared ? "bg-teal-500 text-white" : "bg-slate-100 text-slate-500"}`}
                     >
                       {s.cleared ? "Cleared" : "Mark"}
                     </button>
                   </td>
                   <td className="py-2 px-4">
-                    <button onClick={() => remove(s.candidate_id)} className="text-slate-300 hover:text-rose-500"><Trash2 size={15} /></button>
+                    <button type="button" aria-label={`Remove ${s.candidate_name || s.candidate_email || s.candidate_id} from round`} onClick={() => remove(s.candidate_id)} className="text-slate-300 hover:text-rose-500"><Trash2 size={15} /></button>
                   </td>
                 </tr>
               ))}
@@ -260,17 +271,17 @@ export default function RoundsTab({ id }) {
         </div>
 
         {/* Add referred candidate */}
-        <div className="p-4 border-t border-slate-100 flex items-end gap-2">
+        <form className="hire-round-add p-4 border-t border-slate-100 flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); add(); }}>
           <div className="flex-1 max-w-xs">
             <label className="block text-xs font-medium text-slate-500 mb-1 flex items-center gap-1.5"><Users size={12} /> Add a referred candidate</label>
-            <Input value={addId} onChange={(e) => setAddId(e.target.value)} placeholder="candidate id / email" className="h-9" />
+            <Input aria-label="Candidate ID or email" value={addId} onChange={(e) => setAddId(e.target.value)} placeholder="Candidate ID or email" className="h-9" />
           </div>
-          <Button variant="secondary" onClick={add} disabled={!addId.trim()}><Plus size={16} /> Add</Button>
-        </div>
+          <Button type="submit" variant="secondary" disabled={!addId.trim()}><Plus size={16} /> Add</Button>
+        </form>
       </Card>
 
       {skillsFor && <SkillsModal candidate={skillsFor} onClose={() => setSkillsFor(null)} />}
-    </div>
+    </div></section>
   );
 }
 

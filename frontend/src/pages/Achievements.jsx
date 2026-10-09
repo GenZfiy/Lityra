@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import "../styles/learner-candidate-pages.css";
+import { motion, useReducedMotion } from "framer-motion";
 import { Flame, Trophy, Award, Target, Code2, Star, Medal } from "lucide-react";
 import { Card, Badge, XPBar, StatTile } from "../components/ui/primitives.jsx";
 import { Orbs } from "../components/ui/Decor.jsx";
@@ -23,19 +24,20 @@ const COIN = {
 };
 
 export default function Achievements() {
+  const reduceMotion = useReducedMotion();
   const { user } = useAuth();
   const learnerId = user?.id || DEMO_LEARNER_ID;
   const game = useAsync(() => withFallback(api.game(learnerId), emptyGame), [learnerId]);
   const board = useAsync(() => withFallback(api.leaderboard(), []), []);
   const scores = useAsync(() => withFallback(api.scorecard(learnerId), emptyScorecard), [learnerId]);
 
-  if (game.loading) return <Loading />;
+  if (game.loading) return <Loading label="Loading your milestones…" />;
   const g = game.data;
   const card = (scores.data || [])[0] || {};
   const dims = ["communication", "coding", "aptitude", "project"];
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-achievements"><div>
       <PageHeader
         title="Achievements"
         subtitle="XP, badges, streaks & your skill scorecard"
@@ -43,7 +45,7 @@ export default function Achievements() {
       />
 
       {/* Level hero */}
-      <Card className="p-6 bg-invert-900 text-white border-0 relative overflow-hidden mb-6">
+      <Card className="achievement-level-feature p-6 bg-invert-900 text-white border-0 relative overflow-hidden mb-6">
         <div className="bg-grid absolute inset-0 opacity-[0.12]" />
         <Orbs tone="warm" className="opacity-70" />
         <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-5">
@@ -68,16 +70,16 @@ export default function Achievements() {
         </div>
       </Card>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="achievement-signalboard grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatTile icon={Trophy} label="Total XP" value={g.total_xp.toLocaleString()} tone="brand" />
         <StatTile icon={Flame} label="Streak" value={`${g.streak.current} days`} tone="amber" />
         <StatTile icon={Award} label="Badges" value={g.badges.length} tone="teal" />
         <StatTile icon={Star} label="Level" value={g.level} tone="amber" />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="achievement-record-grid grid lg:grid-cols-3 gap-6">
         {/* Skill scorecard */}
-        <Card className="p-6 lg:col-span-2">
+        <Card className="achievement-skill-record p-6 lg:col-span-2">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-display font-semibold text-ink-900">Skill scorecard</h2>
             <DataSource live={scores.live} />
@@ -98,9 +100,9 @@ export default function Achievements() {
                           ? "bg-amber-500"
                           : "bg-brand-500"
                     }`}
-                    initial={{ width: 0 }}
+                    initial={reduceMotion ? false : { width: 0 }}
                     animate={{ width: `${card[d] ?? 0}%` }}
-                    transition={{ duration: 0.7, ease: "easeOut" }}
+                    transition={reduceMotion ? { duration: 0 } : { duration: 0.7, ease: "easeOut" }}
                   />
                 </div>
               </div>
@@ -113,7 +115,7 @@ export default function Achievements() {
               const meta = BADGE_META[code] || { icon: Award, name: code, tone: "slate" };
               const c = COIN[meta.tone] || COIN.slate;
               return (
-                <motion.div key={code} whileHover={{ y: -3, scale: 1.05 }} transition={{ type: "spring", stiffness: 300, damping: 18 }}
+                <motion.div key={code} whileHover={reduceMotion ? undefined : { y: -3, scale: 1.05 }} transition={{ type: "spring", stiffness: 300, damping: 18 }}
                   className="flex flex-col items-center gap-2 w-[78px]">
                   <span className="relative grid place-items-center h-14 w-14 rounded-full text-white"
                     style={{ background: c.g, boxShadow: `0 10px 22px -6px rgba(${c.s},.55), inset 0 2px 3px rgba(255,255,255,.55), inset 0 -4px 6px rgba(0,0,0,.28)` }}>
@@ -162,6 +164,6 @@ export default function Achievements() {
           </div>
         </Card>
       </div>
-    </div>
+    </div></div>
   );
 }

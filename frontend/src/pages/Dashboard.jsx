@@ -1,34 +1,50 @@
-import { motion } from "framer-motion";
+import "../styles/learner-candidate-pages.css";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Flame, Trophy, Award, Star, ArrowRight, Code2, Target } from "lucide-react";
-import { Button, Badge, Card, XPBar, StatTile } from "../components/ui/primitives.jsx";
-import { Orbs } from "../components/ui/Decor.jsx";
+import {
+  ArrowRight,
+  Award,
+  BookOpen,
+  CheckCircle2,
+  Code2,
+  Compass,
+  Flame,
+  Sparkles,
+  Target,
+  Trophy,
+} from "lucide-react";
+import { Badge, Button, Card, XPBar } from "../components/ui/primitives.jsx";
 import { Loading } from "../components/ui/states.jsx";
 import { useAsync } from "../hooks/useAsync.js";
 import { api, withFallback } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 import { emptyGame, emptyScorecard } from "../lib/demo.js";
 
-// Known badge codes → display. Unknown codes still render with a generic medal.
-const BADGE_META = {
-  streak_7: { icon: Flame, name: "7-Day Streak", tone: "amber" },
-  dsa_i: { icon: Code2, name: "DSA I", tone: "teal" },
-  aptitude_ace: { icon: Target, name: "Aptitude Ace", tone: "brand" },
-};
-const DIMS = [
-  { key: "communication", label: "Communication", tone: "brand" },
-  { key: "coding", label: "Coding", tone: "teal" },
-  { key: "aptitude", label: "Aptitude", tone: "amber" },
-  { key: "project", label: "Project", tone: "brand" },
+const QUICK_ACTIONS = [
+  { to: "/lms/learning", icon: BookOpen, number: "01", title: "Continue learning", description: "Pick up a lesson or explore your learning path.", tone: "learn" },
+  { to: "/lms/practice", icon: Code2, number: "02", title: "Practice a skill", description: "Work through coding challenges and build fluency.", tone: "practice" },
+  { to: "/lms/assessments", icon: Target, number: "03", title: "Check your progress", description: "Take an assessment and see what to focus on next.", tone: "assess" },
+  { to: "/lms/careers", icon: Compass, number: "04", title: "Explore career paths", description: "Connect your skills to possible next steps.", tone: "career" },
 ];
+
+const DIMS = [
+  { key: "communication", label: "Communication", color: "#06b6d4" },
+  { key: "coding", label: "Coding", color: "#3b82a1" },
+  { key: "aptitude", label: "Aptitude", color: "#c68b25" },
+  { key: "project", label: "Projects", color: "#71934b" },
+];
+
+const BADGE_META = {
+  streak_7: { icon: Flame, name: "7-day streak" },
+  dsa_i: { icon: Code2, name: "DSA I" },
+  aptitude_ace: { icon: Target, name: "Aptitude Ace" },
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
   const learnerId = user?.id;
   const first = (user?.full_name || "there").split(" ")[0];
-
-  // Real per-user data. If the call fails (e.g. a brand-new learner with no
-  // record yet), fall back to honest zeros — never demo numbers.
+  const reduceMotion = useReducedMotion();
   const game = useAsync(
     () => (learnerId ? withFallback(api.game(learnerId), emptyGame) : Promise.resolve({ data: emptyGame, live: false })),
     [learnerId],
@@ -38,123 +54,149 @@ export default function Dashboard() {
     [learnerId],
   );
 
-  if (game.loading) return <Loading />;
-  const g = game.data || emptyGame;
-  const card = (scores.data || [])[0] || {};
-  const badges = g.badges || [];
-  const started = (g.total_xp || 0) > 0;
+  if (game.loading) return <Loading label="Loading your learning overview…" />;
+  const progress = game.data || emptyGame;
+  const scorecard = (scores.data || [])[0] || {};
+  const badges = progress.badges || [];
+  const hasStarted = (progress.total_xp || 0) > 0;
 
   return (
-    <div className="space-y-6">
-      {/* Hero */}
-      <Card className="p-6 bg-invert-900 text-white border-0 relative overflow-hidden">
-        <div className="bg-grid absolute inset-0 opacity-[0.12]" />
-        <Orbs tone="warm" className="opacity-70" />
-        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div>
-            <Badge tone="amber"><Star size={13} /> Level {g.level}</Badge>
-            <h1 className="text-2xl font-display font-bold text-white mt-3">
-              {started ? `Keep it up, ${first} 👏` : `Welcome, ${first} 👋`}
-            </h1>
-            <div className="mt-4 max-w-md">
-              <XPBar value={g.total_xp || 0} max={g.next_level_at || 1000} label={`Level ${g.level} → ${g.level + 1}`} />
-            </div>
-          </div>
-          <Button as={Link} to="/lms/learning" variant="amber" size="lg" className="shrink-0">
-            {started ? "Continue learning" : "Start learning"} <ArrowRight size={18} />
-          </Button>
+    <div className="page-composition page-composition-learning"><div className="lms-home space-y-9">
+      <header className="lms-home-heading">
+        <div>
+          <p className="lms-kicker"><Sparkles size={14} /> Your learning space</p>
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-normal text-ink-900 sm:text-4xl">
+            {hasStarted ? `Welcome back, ${first}.` : `Welcome, ${first}.`}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+            {hasStarted
+              ? "Keep your momentum going. Choose a next step that feels useful today."
+              : "Start wherever you are. A lesson, a practice challenge, or a quick assessment will help you find your rhythm."}
+          </p>
         </div>
-      </Card>
+        <Badge tone="teal"><CheckCircle2 size={14} /> Your pace, your path</Badge>
+      </header>
 
-      {/* Stat tiles — all from the learner's real gamification record */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatTile icon={Flame} label="Current streak" value={`${g.streak?.current ?? 0} days`} tone="amber" sub={`Best: ${g.streak?.longest ?? 0}`} />
-        <StatTile icon={Trophy} label="Total XP" value={(g.total_xp || 0).toLocaleString()} tone="brand" />
-        <StatTile icon={Award} label="Badges" value={badges.length} tone="teal" />
-        <StatTile icon={Star} label="Level" value={g.level} tone="amber" />
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Skill scorecard */}
-        <Card className="p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="font-display font-semibold text-ink-900">Skill scorecard</h2>
-              <p className="text-sm text-slate-500">Your readiness across the four dimensions.</p>
-            </div>
+      <section className="lms-next-panel" aria-labelledby="next-step-title">
+        <div className="lms-next-copy">
+          <p className="lms-kicker lms-kicker-light">A good place to start</p>
+          <h2 id="next-step-title">{hasStarted ? "One more step forward." : "Make your first move."}</h2>
+          <p>{hasStarted ? "Continue a lesson and keep building on what you already know." : "Explore a lesson and start building skills one step at a time."}</p>
+          <div className="lms-next-actions">
+            <Button as={Link} to="/lms/learning" variant="amber" size="md">
+              {hasStarted ? "Continue learning" : "Explore learning"} <ArrowRight size={17} />
+            </Button>
+            {hasStarted && (
+              <span className="lms-xp-note"><Trophy size={14} /> {progress.total_xp || 0} XP earned</span>
+            )}
           </div>
+        </div>
+        <div className="lms-level-panel">
+          <div className="lms-level-top">
+            <span className="lms-level-icon"><Trophy size={19} /></span>
+            <span className="text-xs font-semibold text-white/70">YOUR MOMENTUM</span>
+          </div>
+          <p className="lms-level-number">Level {progress.level || 1}</p>
+          <XPBar value={progress.total_xp || 0} max={progress.next_level_at || 1000} label="Progress to next level" />
+        </div>
+      </section>
+
+      <section aria-labelledby="actions-title">
+        <div className="lms-section-heading">
+          <div>
+            <p className="lms-kicker">Keep moving</p>
+            <h2 id="actions-title">What would you like to do?</h2>
+          </div>
+          <Link className="lms-all-link" to="/lms/roadmap">View my roadmap <ArrowRight size={15} /></Link>
+        </div>
+        <div className="lms-action-grid">
+          {QUICK_ACTIONS.map(({ to, icon: Icon, number, title, description, tone }, index) => (
+            <motion.div
+              key={to}
+              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.35, delay: reduceMotion ? 0 : index * 0.045 }}
+            >
+              <Link className={`lms-action-item lms-action-${tone}`} to={to}>
+                <div className="flex items-center justify-between">
+                  <span className="lms-action-icon"><Icon size={19} strokeWidth={1.8} /></span>
+                  <span className="lms-action-number">{number}</span>
+                </div>
+                <h3>{title}</h3>
+                <p>{description}</p>
+                <span className="lms-action-arrow" aria-hidden="true"><ArrowRight size={17} /></span>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      <section className="lms-progress-grid" aria-label="Progress and achievements">
+        <Card className="lms-progress-card">
+          <div className="lms-section-heading lms-section-heading-tight">
+            <div>
+              <p className="lms-kicker">Your progress</p>
+              <h2>Skill snapshot</h2>
+            </div>
+            <Link className="lms-icon-link" to="/lms/skill-map" aria-label="Open my skill map"><ArrowRight size={18} /></Link>
+          </div>
+          <p className="-mt-2 mb-6 text-sm text-slate-500">Your scorecard updates as you learn and practice.</p>
           <div className="space-y-5">
-            {DIMS.map((d) => {
-              const val = Math.max(0, Math.min(100, Math.round(card[d.key] ?? 0)));
+            {DIMS.map((dimension) => {
+              const value = Math.max(0, Math.min(100, Math.round(scorecard[dimension.key] ?? 0)));
               return (
-                <div key={d.key}>
-                  <div className="flex justify-between text-sm mb-1.5">
-                    <span className="font-medium text-ink-900">{d.label}</span>
-                    <span className="tabular-nums text-slate-500">{val}%</span>
+                <div key={dimension.key}>
+                  <div className="mb-2 flex justify-between gap-3 text-sm">
+                    <span className="font-medium text-ink-900">{dimension.label}</span>
+                    <span className="tabular-nums text-slate-500">{value}%</span>
                   </div>
-                  <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                  <div className="lms-skill-track" role="progressbar" aria-label={`${dimension.label} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value}>
                     <motion.div
-                      className={`h-full rounded-full ${
-                        d.tone === "teal" ? "bg-teal-500" : d.tone === "amber" ? "bg-amber-500" : "bg-brand-500"
-                      }`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${val}%` }}
-                      transition={{ duration: 0.7, ease: "easeOut" }}
+                      className="lms-skill-fill"
+                      style={{ backgroundColor: dimension.color }}
+                      initial={reduceMotion ? false : { width: 0 }}
+                      animate={{ width: `${value}%` }}
+                      transition={{ duration: reduceMotion ? 0 : 0.65, ease: "easeOut" }}
                     />
                   </div>
                 </div>
               );
             })}
           </div>
-          {!started && (
-            <p className="text-sm text-slate-400 mt-5">
-              Your scorecard fills in as you take assessments and practice — start a lesson to see it grow.
-            </p>
-          )}
+          {!hasStarted && <p className="mt-5 text-xs leading-5 text-slate-400">No progress yet. It will appear here as you complete activities.</p>}
         </Card>
 
-        {/* Badges + next up */}
-        <div className="space-y-6">
-          <Card className="p-6">
-            <h2 className="font-display font-semibold text-ink-900 mb-4">Recent badges</h2>
-            {badges.length > 0 ? (
-              <div className="space-y-3">
-                {badges.map((code) => {
-                  const meta = BADGE_META[code] || { icon: Award, name: code, tone: "brand" };
-                  return (
-                    <div key={code} className="flex items-center gap-3">
-                      <span
-                        className={`grid place-items-center h-10 w-10 rounded-md ${
-                          meta.tone === "teal"
-                            ? "bg-teal-500/12 text-teal-600"
-                            : meta.tone === "amber"
-                              ? "bg-amber-500/15 text-amber-600"
-                              : "bg-brand-500/10 text-brand-600"
-                        }`}
-                      >
-                        <meta.icon size={20} strokeWidth={1.75} />
-                      </span>
-                      <span className="text-sm font-medium text-ink-900">{meta.name}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-400">
-                No badges yet — complete lessons and assessments to start earning them.
-              </p>
-            )}
-          </Card>
+        <Card className="lms-badges-card">
+          <div className="lms-section-heading lms-section-heading-tight">
+            <div>
+              <p className="lms-kicker">Milestones</p>
+              <h2>Achievements</h2>
+            </div>
+            <Link className="lms-icon-link" to="/lms/achievements" aria-label="View all achievements"><ArrowRight size={18} /></Link>
+          </div>
+          {badges.length ? (
+            <ul className="lms-badge-list">
+              {badges.slice(0, 4).map((code) => {
+                const achievement = BADGE_META[code] || { icon: Award, name: code };
+                const Icon = achievement.icon;
+                return <li key={code}><span><Icon size={17} /></span>{achievement.name}</li>;
+              })}
+            </ul>
+          ) : (
+            <div className="lms-achievement-empty">
+              <span><Award size={21} /></span>
+              <p>Your first milestone is waiting.</p>
+              <Link to="/lms/achievements">See how to earn badges <ArrowRight size={14} /></Link>
+            </div>
+          )}
+          <div className="lms-streak-row">
+            <span><Flame size={16} /> Learning streak</span>
+            <strong>{progress.streak?.current ?? 0} days</strong>
+          </div>
+        </Card>
+      </section>
 
-          <Card className="p-6">
-            <h2 className="font-display font-semibold text-ink-900 mb-3">Up next</h2>
-            <p className="text-sm text-slate-500 mb-3">Jump back into your learning path.</p>
-            <Button as={Link} to="/lms/learning" variant="secondary" className="w-full">
-              Go to My Learning
-            </Button>
-          </Card>
-        </div>
-      </div>
-    </div>
+      <div className="lms-help-note"><span><Sparkles size={16} /></span><p>Not sure what to focus on? <Link to="/lms/tutor">Ask your AI tutor for a study plan.</Link></p></div>
+    </div></div>
   );
 }

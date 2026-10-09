@@ -123,6 +123,18 @@ class _BaseRunner(Executor):
     def _wrap(self, workdir: str, argv: list[str]) -> list[str]:
         return argv  # dev: no wrapping
 
+    @staticmethod
+    def _execution_env(workdir: str) -> dict[str, str]:
+        """Pass only non-secret runtime settings to untrusted code/toolchains."""
+        if os.name == "nt":
+            env = {k: os.environ[k] for k in ("SYSTEMROOT", "WINDIR") if k in os.environ}
+            env.update({"PATH": os.environ.get("PATH", os.defpath),
+                        "TEMP": workdir, "TMP": workdir, "HOME": workdir})
+            return env
+        env = {"PATH": os.pathsep.join((os.path.join(sys.prefix, "bin"), os.defpath)),
+               "HOME": workdir, "TMPDIR": workdir, "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"}
+        return env
+
     def run(self, language: str, code: str, stdin: str, timeout_sec: int,
             mem_mb: int = 256) -> RunResult:
         spec = _langs().get(language)
@@ -138,13 +150,15 @@ class _BaseRunner(Executor):
 
         with tempfile.TemporaryDirectory() as d:
             (Path(d) / spec["file"]).write_text(code, encoding="utf-8")
+            clean_env = self._execution_env(d)
 
             # compile step (java/cpp)
             compile_log = ""
             if "compile" in spec:
                 try:
                     cp = subprocess.run(self._wrap(d, spec["compile"]), cwd=d,
-                                        capture_output=True, timeout=max(timeout_sec, 15))
+                                        capture_output=True, timeout=max(timeout_sec, 15),
+                                        env=clean_env)
                     compile_log = cp.stderr.decode("utf-8", "replace")
                     if cp.returncode != 0:
                         return RunResult("", "Compilation failed", cp.returncode, 0,
@@ -163,7 +177,8 @@ class _BaseRunner(Executor):
                 kw = {"preexec_fn": preexec} if preexec else {}
                 proc = subprocess.run(
                     self._wrap(d, spec["run"]), input=stdin.encode("utf-8"),
-                    capture_output=True, timeout=timeout_sec, cwd=d, **kw,
+                    capture_output=True, timeout=timeout_sec, cwd=d,
+                    env=clean_env, **kw,
                 )
                 ms = int((time.perf_counter() - start) * 1000)
                 err = proc.stderr.decode("utf-8", "replace")
@@ -198,6 +213,10 @@ class SandboxedExecutor(_BaseRunner):
                     "--rlimit_as", str(self.mem_mb), "--rlimit_cpu", "10", "--cwd", workdir,
                     "--bindmount_ro", "/usr", "--bindmount", f"{workdir}:{workdir}", "--", *argv]
         return [self.bwrap, "--unshare-all", "--die-with-parent", "--new-session",
+                "--clearenv", "--setenv", "PATH",
+                os.pathsep.join((os.path.join(sys.prefix, "bin"), os.defpath)),
+                "--setenv", "HOME", workdir, "--setenv", "TMPDIR", workdir,
+                "--setenv", "LANG", "C.UTF-8", "--setenv", "LC_ALL", "C.UTF-8",
                 "--ro-bind", "/usr", "/usr", "--ro-bind", "/lib", "/lib",
                 "--ro-bind", "/lib64", "/lib64",
                 # /etc resolves update-alternatives symlinks (javac/java) and
@@ -215,13 +234,18 @@ class DisabledExecutor(Executor):
 
 
 def build_executor(mode: str) -> Executor:
+    production = os.getenv("APP_ENV") == "production"
     if mode == "disabled":
         return DisabledExecutor()
+    if mode == "subprocess":
+        if production:
+            raise RuntimeError("unsandboxed code execution is forbidden in production")
+        return SubprocessExecutor()
     if mode == "sandbox":
         try:
             return SandboxedExecutor()
         except RuntimeError:
-            if os.getenv("APP_ENV") == "production":
+            if production:
                 raise
             return SubprocessExecutor()
-    return SubprocessExecutor()
+    raise ValueError(f"unsupported executor mode: {mode}")

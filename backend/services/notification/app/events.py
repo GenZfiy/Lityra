@@ -142,7 +142,7 @@ def register_handlers(bus, db, svc) -> None:
             f"is {weakest}. Here's a focused plan to turn that into a strength:\n\n"
             f"{plan_txt}\n\n"
             + (f"Quick win to start with: {quick_win}\n\n" if quick_win else "")
-            + f"Open LARE Learn -> My Skill Map to see the full plan, a 2-minute explainer of "
+            + f"Open Lityra Learn -> My Skill Map to see the full plan, a 2-minute explainer of "
             f"your top gap, and 3 practice problems. Small, steady effort adds up fast — "
             f"you've got this!" + SIGNATURE)
         with db.session() as s:

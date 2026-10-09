@@ -30,7 +30,7 @@ def _notify_schedule(iv) -> None:
         except Exception:  # noqa: BLE001
             pass
         candidate_name = info.get("full_name") or "the candidate"
-        company = "LARE"
+        company = "GenZify"
         try:
             d = cli.get("drive-core", f"/drive/v1/drives/{iv.drive_id}")
             company = ((d or {}).get("data") or {}).get("company_name") or company

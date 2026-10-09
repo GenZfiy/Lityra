@@ -1,8 +1,8 @@
-// Premium, self-contained SVG charts for the LARE Drive analytics. No external
+// Premium, self-contained SVG charts for the Lityra Drive analytics. No external
 // chart library. Theme-aware (tracks/axes use CSS token vars; data colors are
 // explicit hues). Each chart is data-driven from real drive metrics.
 import { useId } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 /* ---------- Mastery bar (magnitude, with depth) ----------
    A recessed glossy track with a gradient fill, quarter-scale ticks, a glowing
@@ -23,6 +23,7 @@ const rgba = (hex, a) => {
    A color-graded tile whose fill intensity scales with mastery (green→amber→red).
    Big % headline, name + fraction, optional rank chip. Grid these for a heat-map. */
 export function HeatTile({ label, pct = 0, sub, band, rank }) {
+  const reduceMotion = useReducedMotion();
   const p = Math.max(0, Math.min(100, Math.round(pct)));
   const b = MASTERY_BANDS[band] || MASTERY_BANDS[bandFor(p)];
   const a = 0.12 + (p / 100) * 0.34; // heat intensity 0.12 → 0.46
@@ -30,11 +31,11 @@ export function HeatTile({ label, pct = 0, sub, band, rank }) {
     <motion.div
       className="relative rounded-xl p-3.5 overflow-hidden shadow-card"
       style={{ background: `linear-gradient(140deg, ${rgba(b.c1, a * 0.85)}, ${rgba(b.c2, a)})`, border: `1px solid ${rgba(b.c2, 0.22)}` }}
-      initial={{ opacity: 0, y: 8 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-30px" }}
-      transition={{ duration: 0.4 }}
-      whileHover={{ y: -3 }}
+      transition={{ duration: reduceMotion ? 0 : 0.4 }}
+      whileHover={reduceMotion ? undefined : { y: -3 }}
     >
       {/* top gloss */}
       <span aria-hidden className="absolute inset-x-0 top-0 h-8 pointer-events-none"
@@ -55,6 +56,7 @@ export function HeatTile({ label, pct = 0, sub, band, rank }) {
    Concentric grid rings, gradient fill, glowing stroke, band-coloured vertices
    and per-axis value labels. Radius maps exactly to mastery. Needs ≥ 3 axes. */
 export function RadarChart({ data = [], color = "#2563EB", size = 300, max = 100 }) {
+  const reduceMotion = useReducedMotion();
   const id = useId();
   const padX = 138, padY = 48;                 // room so long edge labels never clip
   const W = size + padX * 2, H = size + padY * 2;
@@ -88,8 +90,8 @@ export function RadarChart({ data = [], color = "#2563EB", size = 300, max = 100
 
         {/* value shape */}
         <motion.g style={{ transformBox: "fill-box", transformOrigin: "center" }}
-          initial={{ opacity: 0, scale: 0.5 }} whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.5 }} whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, margin: "-40px" }} transition={{ duration: reduceMotion ? 0 : 0.8, ease: [0.16, 1, 0.3, 1] }}>
           <polygon points={valuePoly} fill={`url(#rf${id})`} stroke={color} strokeWidth="2.5" strokeLinejoin="round" filter={`url(#rg${id})`} />
         </motion.g>
 
@@ -104,8 +106,8 @@ export function RadarChart({ data = [], color = "#2563EB", size = 300, max = 100
           return (
             <g key={`v${i}`}>
               <motion.circle cx={vx} cy={vy} r="4.5" fill="rgb(var(--c-surface))" stroke={b.c2} strokeWidth="2.5"
-                initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: "-40px" }}
-                transition={{ delay: 0.5 + i * 0.05 }}>
+                initial={reduceMotion ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: "-40px" }}
+                transition={{ delay: reduceMotion ? 0 : 0.5 + i * 0.05 }}>
                 <title>{d.label}: {p}%</title>
               </motion.circle>
               <text x={lx} y={ly - 5} textAnchor={anchor} fill="rgb(var(--c-ink-900))" fontSize="11" fontWeight="600" style={{ textTransform: "capitalize" }}>{d.label}</text>
@@ -119,6 +121,7 @@ export function RadarChart({ data = [], color = "#2563EB", size = 300, max = 100
 }
 
 export function MasteryBar({ label, pct = 0, sub, band, small, rank }) {
+  const reduceMotion = useReducedMotion();
   const p = Math.max(0, Math.min(100, Math.round(pct)));
   const b = MASTERY_BANDS[band] || MASTERY_BANDS[bandFor(p)];
   const h = small ? "h-2.5" : "h-3.5";
@@ -153,10 +156,10 @@ export function MasteryBar({ label, pct = 0, sub, band, small, rank }) {
         <motion.div
           className="absolute left-0 top-0 h-full rounded-full"
           style={{ background: `linear-gradient(120deg, ${b.c1}, ${b.c2})`, boxShadow: `0 1px 6px -1px ${b.glow}, inset 0 1px 0 rgba(255,255,255,.45)` }}
-          initial={{ width: 0 }}
+          initial={reduceMotion ? false : { width: 0 }}
           whileInView={{ width: `${p}%` }}
           viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 1, ease: [0.16, 1, 0.3, 1] }}
         >
           {/* glossy top highlight */}
           <span aria-hidden className="absolute inset-x-0 top-0 h-1/2 rounded-full"
@@ -265,6 +268,7 @@ export function Funnel({ stages = [] }) {
    Premium line form: deep gradient fill, a glowing gradient stroke that draws
    in on view, soft-glowing data points, an emphasized peak with a value cap. */
 export function AreaChart({ data = [], color = "#2563EB", height = 190 }) {
+  const reduceMotion = useReducedMotion();
   const id = useId();
   const W = 520, H = height, padX = 16, padT = 22, padB = 30;
   const max = Math.max(1, ...data.map((d) => d.value));
@@ -301,21 +305,21 @@ export function AreaChart({ data = [], color = "#2563EB", height = 190 }) {
 
         {area && (
           <motion.path d={area} fill={`url(#a${id})`}
-            initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.9, delay: 0.25 }} />
+            initial={reduceMotion ? false : { opacity: 0 }} whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-40px" }} transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : 0.25 }} />
         )}
         {line && (
           <motion.path d={line} fill="none" stroke={`url(#s${id})`} strokeWidth="3"
             strokeLinecap="round" strokeLinejoin="round" filter={`url(#glow${id})`}
-            initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }}
-            viewport={{ once: true, margin: "-40px" }} transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }} />
+            initial={reduceMotion ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }}
+            viewport={{ once: true, margin: "-40px" }} transition={{ duration: reduceMotion ? 0 : 1.1, ease: [0.16, 1, 0.3, 1] }} />
         )}
         {pts.map((p, i) => {
           const isPeak = i === peak && data[i].value > 0;
           return (
             <motion.g key={i}
-              initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "-40px" }} transition={{ delay: 0.5 + i * 0.06 }}>
+              initial={reduceMotion ? false : { opacity: 0 }} whileInView={{ opacity: 1 }}
+              viewport={{ once: true, margin: "-40px" }} transition={{ delay: reduceMotion ? 0 : 0.5 + i * 0.06 }}>
               {isPeak && <circle cx={p[0]} cy={p[1]} r="8" fill={color} opacity="0.18" />}
               <circle cx={p[0]} cy={p[1]} r={isPeak ? 5 : 3.6} fill="rgb(var(--c-surface))"
                       stroke={color} strokeWidth={isPeak ? 2.6 : 2}

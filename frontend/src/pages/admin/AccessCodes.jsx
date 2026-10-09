@@ -1,3 +1,4 @@
+import "../../styles/institution-operations-pages.css";
 import { useEffect, useState } from "react";
 import { KeyRound, Plus, RefreshCw, Copy, Check, Power } from "lucide-react";
 import { Card, Button, Badge, Field, Input } from "../../components/ui/primitives.jsx";
@@ -62,14 +63,18 @@ export default function AccessCodes() {
   if (loading) return <Loading />;
 
   return (
-    <div>
+    <div className="page-composition page-composition-institution institution-ops institution-ops-access"><div>
       <PageHeader
         title="Access IDs"
         subtitle="One secure code per class (College → Year → Branch → Section). Students enter it after login to reach their learning dashboard."
       />
 
+      <section className="access-workbench" aria-label="Access ID operations">
+      <aside className="access-issuer">
+        <div className="access-issuer-heading"><span>ISSUE CREDENTIAL</span><strong>{codes.length}</strong><small>codes in this scope</small></div>
+
       {/* Create */}
-      <Card className="p-6 mb-6">
+      <Card className="p-5">
         <h3 className="font-display font-semibold text-ink-900 flex items-center gap-2 mb-4">
           <Plus size={18} className="text-brand-500" /> Generate a new Access ID
         </h3>
@@ -99,12 +104,14 @@ export default function AccessCodes() {
           </Button>
         </div>
       </Card>
+      </aside>
 
       {/* List */}
       {codes.length === 0 ? (
-        <EmptyState title="No Access IDs yet" hint="Generate one above for a class to let its students in." />
+        <div className="access-ledger"><EmptyState title="No Access IDs yet" hint="Choose an institution and cohort to issue the first code." /></div>
       ) : (
-        <Card className="p-0 overflow-hidden">
+        <Card className="access-ledger p-0 overflow-hidden">
+          <header className="access-ledger-heading"><div><span>ISSUED CREDENTIALS</span><h2>Class access ledger</h2></div><p>Copy, rotate or deactivate an ID</p></header>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -149,6 +156,7 @@ export default function AccessCodes() {
           </div>
         </Card>
       )}
-    </div>
+      </section>
+    </div></div>
   );
 }

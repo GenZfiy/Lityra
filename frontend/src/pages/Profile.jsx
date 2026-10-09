@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useRef, useState } from "react";
 import { Mail, Phone, GraduationCap, FileText, Github, Save, CheckCircle2, Loader2, UploadCloud } from "lucide-react";
 import { Card, Badge, Button, Field, Input, XPBar } from "../components/ui/primitives.jsx";
@@ -26,7 +27,7 @@ export default function Profile() {
     if (loaded.data && !form) setForm(loaded.data);
   }, [loaded.data, form]);
 
-  if (loaded.loading || !form) return <Loading />;
+  if (loaded.loading || !form) return <Loading label="Loading your profile…" />;
 
   async function save(e) {
     e.preventDefault();
@@ -44,15 +45,15 @@ export default function Profile() {
   }
 
   return (
-    <div>
+    <div className="page-composition page-composition-account learner-screen-profile"><div>
       <PageHeader
         title="My Profile"
         subtitle="Your recruitment profile & portfolio"
         right={<DataSource live={loaded.live} />}
       />
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="recruitment-profile-desk grid lg:grid-cols-3 gap-6">
         {/* Edit form */}
-        <Card className="p-6 lg:col-span-2">
+        <Card className="profile-edit-record p-6 lg:col-span-2">
           <h2 className="font-display font-semibold text-ink-900 mb-4">Details</h2>
           <form onSubmit={save} className="grid sm:grid-cols-2 gap-4">
             <Field label="Full name">
@@ -111,7 +112,7 @@ export default function Profile() {
 
         {/* Side card */}
         <div className="space-y-6">
-          <Card className="p-6 text-center">
+          <Card className="profile-identity-rail p-6 text-center">
             <span className="grid place-items-center h-20 w-20 rounded-full bg-invert-900 text-white text-2xl font-display font-bold mx-auto mb-3">
               {(form.full_name || user?.email || "?").slice(0, 2).toUpperCase()}
             </span>
@@ -141,7 +142,7 @@ export default function Profile() {
           </Card>
         </div>
       </div>
-    </div>
+    </div></div>
   );
 }
 

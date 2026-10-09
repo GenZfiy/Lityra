@@ -1,8 +1,8 @@
 # Software Requirements Specification (SRS)
 
-## LARE Unified Skilling & Recruitment Platform
+## Lityra Unified Skilling & Recruitment Platform
 
-**Prepared by:** LARE IT Cloud Solutions
+**Prepared by:** GenZify — Engineering Human Potential Through Technology
 **Version:** 1.0
 **Date:** 21 July 2026
 **Status:** Baseline for Engineering
@@ -16,8 +16,8 @@ This is the **master SRS** for a single platform composed of **two major applica
 
 | # | Application | Codename | Purpose |
 |---|-------------|----------|---------|
-| A | **LARE LMS** | `lare-lms` | AI-integrated Learning Management System delivering the 4-Year Structured Training & Placement Programme to colleges, with gamified frontends and per-student skill tracking. |
-| B | **LARE Drive** | `lare-drive` | Online Campus Recruitment & Assessment Platform (drive conducting) — question banks, proctored exams, coding assessments, evaluation, interviews, offers. |
+| A | **Lityra LMS** | `lare-lms` | AI-integrated Learning Management System delivering the 4-Year Structured Training & Placement Programme to colleges, with gamified frontends and per-student skill tracking. |
+| B | **Lityra Drive** | `lare-drive` | Online Campus Recruitment & Assessment Platform (drive conducting) — question banks, proctored exams, coding assessments, evaluation, interviews, offers. |
 
 The two applications are **not** separate products; they are two bounded domains of one platform. A student who completes the LMS Year 4 track flows directly into a recruitment drive without re-registering. Shared services (Auth, Notification, Analytics, Audit, File Storage, API Gateway) serve both.
 
@@ -66,7 +66,7 @@ Each microservice has its **own detailed SRS file**. This master document define
 ## 2. Purpose & Scope
 
 ### 2.1 Purpose
-Deliver a production-grade SaaS platform that lets LARE IT Cloud Solutions:
+Deliver a production-grade SaaS platform that lets GenZify — Engineering Human Potential Through Technology:
 1. Run a **4-year, branch-wise, LMS-tracked training programme** across partner colleges (starting with Aditya College of Engineering, Madanapalle), with AI-driven personalization and gamified engagement.
 2. Conduct **end-to-end recruitment drives** — from eligibility filtering through proctored online assessments, coding rounds, automated evaluation, interview management, and offer generation.
 3. Give colleges a **"best college" scorecard** — measurable, LMS-tracked readiness and placement analytics usable for NAAC/NBA documentation.
@@ -92,13 +92,13 @@ Deliver a production-grade SaaS platform that lets LARE IT Cloud Solutions:
 
 | Actor | Application | Description |
 |-------|-------------|-------------|
-| Super Admin | Both | LARE platform owner; manages tenants, colleges, drives, config, global analytics. |
-| Company Admin | Drive (+LMS visibility) | LARE recruitment/programme owner; creates drives, question banks, offers. |
+| Super Admin | Both | Lityra platform owner; manages tenants, colleges, drives, config, global analytics. |
+| Company Admin | Drive (+LMS visibility) | Lityra recruitment/programme owner; creates drives, question banks, offers. |
 | College Admin / TPO | Both | College coordinator; onboards students, schedules, views results. |
 | Trainer / Faculty Mentor | LMS | Delivers modules, grades subjective work, mentors stream selection. |
 | Recruiter / Interviewer | Drive | Conducts interviews, rates candidates, recommends selection. |
 | Student | LMS | Learner across the 4-year programme. |
-| Candidate | Drive | Same person as Student, in recruitment context (top performers routed to Lare Consulting & Technologies Pvt. Ltd. PPO pipeline). |
+| Candidate | Drive | Same person as Student, in recruitment context (top performers routed to GenZify PPO pipeline). |
 | System (AI) | Both | Claude-powered tutoring, recommendation, evaluation, feedback. |
 
 > A single physical person holds one **user** identity (Auth Service) and may carry both a **learner** profile (LMS) and a **candidate** profile (Drive).
@@ -181,7 +181,7 @@ Deliver a production-grade SaaS platform that lets LARE IT Cloud Solutions:
 - Timestamps: ISO-8601 UTC. All dates stored UTC; rendered in college timezone (Asia/Kolkata default).
 
 ### 6.2 Identity & Multi-Tenancy
-- `tenant_id` (LARE org) and `college_id` on every domain row.
+- `tenant_id` (Lityra org) and `college_id` on every domain row.
 - Postgres Row-Level Security enforces tenant + college isolation; the app also filters defensively.
 - One user, many roles; roles scoped to a college where relevant (a TPO of College X is not TPO of College Y).
 
@@ -263,7 +263,7 @@ Each microservice is an independent deployable unit:
 | Skill scorecard (comm/coding/aptitude/project) | Progress Tracking + Assessment + Analytics |
 | Year-wise auto certificates | Certification Service |
 | Aptitude/NQT-pattern & company exams | Question Bank + Exam Engine + Coding |
-| Placement pipeline / PPO to Lare Consulting | Drive + Interview + Result services |
+| Placement pipeline / PPO to GenZify | Drive + Interview + Result services |
 | Anti-cheating & integrity | Anti-Cheating Service |
 | "Best college" analytics for NAAC/NBA | Analytics Service |
 | Gamified, "mesmerising" engagement | Gamification + frontend |
@@ -277,7 +277,7 @@ Each microservice is an independent deployable unit:
 |------|---------|
 | Drive | A recruitment campaign for a company/role across one or more colleges. |
 | Cohort | A branch+year group progressing through the programme together. |
-| PPO | Pre-Placement Offer (via Lare Consulting and Technologies Pvt. Ltd.). |
+| PPO | Pre-Placement Offer (via GenZify). |
 | NQT | National Qualifier Test (e.g., TCS NQT) exam pattern. |
 | Skill Scorecard | Per-student dashboard of communication, coding, aptitude, project scores. |
 | XP / Streak / Badge | Gamification primitives (Gamification Service). |

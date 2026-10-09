@@ -1,10 +1,11 @@
+import "../../styles/institution-operations-pages.css";
 import { useEffect, useState } from "react";
 import {
   ClipboardCheck, UserCheck, Award, CheckCircle2, GraduationCap,
   Plus, Trash2, ShieldAlert, Shuffle, FilePlus2, Compass,
 } from "lucide-react";
 import { Card, Badge, Button, Field, Input } from "../../components/ui/primitives.jsx";
-import { PageHeader, Loading, DataSource } from "../../components/ui/states.jsx";
+import { PageHeader, Loading, DataSource, EmptyState } from "../../components/ui/states.jsx";
 import { useAsync } from "../../hooks/useAsync.js";
 import { api, withFallback } from "../../lib/api.js";
 import { demoLearners } from "../../lib/demo.js";
@@ -36,7 +37,7 @@ export default function TrainerConsole() {
   }
 
   return (
-    <div>
+    <div className="page-composition page-composition-institution institution-ops institution-ops-trainer"><div>
       <PageHeader
         title="Trainer Console"
         subtitle="Attendance, year-completion checks, and subjective grading"
@@ -49,6 +50,8 @@ export default function TrainerConsole() {
         </div>
       )}
 
+      <section className="trainer-workbench" aria-label="Teaching operations">
+      <main className="trainer-roster">
       <Card className="p-0 overflow-hidden">
         <div className="p-5 border-b border-slate-100">
           <h2 className="font-display font-semibold text-ink-900 flex items-center gap-2">
@@ -56,6 +59,7 @@ export default function TrainerConsole() {
           </h2>
         </div>
         <div className="divide-y divide-slate-100">
+          {list.length === 0 && <EmptyState title="No learners in your roster" hint="Learners assigned to your teaching scope will appear here." />}
           {list.map((l) => (
             <div key={l.id} className="p-4 flex flex-wrap items-center gap-3">
               <div className="min-w-0 flex-1">
@@ -75,11 +79,15 @@ export default function TrainerConsole() {
           ))}
         </div>
       </Card>
-
+      </main>
+      <aside className="trainer-tool-desk">
+      <header><span>FACULTY TOOL DESK</span><h2>Teach, assess, advance</h2><p>Run a learning operation for your assigned cohorts.</p></header>
       <CreateAssessment onCreated={(m) => setFlash(m)} />
       <CareerManager onChange={(m) => setFlash(m)} />
       <SubjectiveGrading onGraded={(m) => setFlash(m)} />
-    </div>
+      </aside>
+      </section>
+    </div></div>
   );
 }
 

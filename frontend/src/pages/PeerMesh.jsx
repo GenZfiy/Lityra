@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -8,7 +9,7 @@ import { PageHeader, Loading } from "../components/ui/states.jsx";
 import { api } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 
-// LARE Learn — Human Knowledge Mesh. The twin knows who just mastered a topic
+// Lityra Learn — Human Knowledge Mesh. The twin knows who just mastered a topic
 // and who is a step behind, and pairs them for peer teach-back (learning by
 // teaching — the strongest known effect). The seeker always initiates.
 export default function PeerMesh() {
@@ -49,7 +50,7 @@ export default function PeerMesh() {
     finally { setBusy(""); setTimeout(() => setFlash(""), 3000); }
   }
 
-  if (loading) return <Loading />;
+  if (loading) return <Loading label="Loading peer learning sessions…" />;
 
   const getHelp = overview?.get_help || [];
   const canTeach = (overview?.can_teach || []).filter((c) => c.seekers > 0);
@@ -58,7 +59,7 @@ export default function PeerMesh() {
   const outgoing = sessions.as_learner || [];
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-peer-mesh"><div>
       <PageHeader
         title="Peer Mesh"
         subtitle="Learn from a classmate who just nailed it — and teach one who's a step behind. Teaching is the fastest way to master something yourself."
@@ -69,7 +70,7 @@ export default function PeerMesh() {
 
       {/* Incoming requests to mentor */}
       {incoming.length > 0 && (
-        <Card className="p-6 mb-6 border-brand-200">
+        <Card className="peer-request-panel p-6 mb-6 border-brand-200">
           <h3 className="font-display font-semibold text-ink-900 mb-3 flex items-center gap-2">
             <HandHelping size={18} className="text-brand-500" /> A peer asked for your help
           </h3>
@@ -89,7 +90,7 @@ export default function PeerMesh() {
 
       {/* Active pairings */}
       {(activeMentor.length > 0 || outgoing.some((s) => s.status === "accepted")) && (
-        <Card className="p-6 mb-6 border-teal-200 bg-teal-500/5">
+        <Card className="peer-pairing-panel p-6 mb-6 border-teal-200 bg-teal-500/5">
           <h3 className="font-display font-semibold text-ink-900 mb-3 flex items-center gap-2">
             <Users size={18} className="text-teal-600" /> Active teach-backs
           </h3>
@@ -106,7 +107,7 @@ export default function PeerMesh() {
         </Card>
       )}
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <section className="peer-learning-hub grid lg:grid-cols-2 gap-6" aria-label="Peer learning opportunities">
         {/* Get help */}
         <Card className="p-6">
           <h3 className="font-display font-semibold text-ink-900 mb-1 flex items-center gap-2">
@@ -167,7 +168,7 @@ export default function PeerMesh() {
             </div>
           )}
         </Card>
-      </div>
-    </div>
+      </section>
+    </div></div>
   );
 }

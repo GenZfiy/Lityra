@@ -61,7 +61,7 @@ class CodingService:
     # ---------- LMS practice (feeds the Cognitive Twin) ----------
     def list_practice(self, s: Session, skill: str | None = None,
                       difficulty: str | None = None) -> list[dict]:
-        """The LARE Learn practice bank — problems flagged practice=True. For
+        """The Lityra Learn practice bank — problems flagged practice=True. For
         each, tell the learner whether they've already solved it (best score)."""
         q = select(Problem).where(Problem.practice.is_(True))
         if skill:

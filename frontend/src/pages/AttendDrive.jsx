@@ -6,48 +6,69 @@ import { Logo } from "../components/ui/Logo.jsx";
 import { api, tokens } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 
-// Public, no-login entry point. A walk-in student registers for the active drive
-// and receives a Student ID; that ID (no password) is how they return. On success
-// we store the issued session so the assessment flow just works.
+// Public entry point. Registration and resume both require an emailed Hire OTP;
+// Student IDs identify a registration but never grant access by themselves.
 export default function AttendDrive() {
   const nav = useNavigate();
   const { reload } = useAuth();
   const [mode, setMode] = useState("register"); // register | resume
   const [form, setForm] = useState({ first_name: "", last_name: "", email: "", phone: "", roll_number: "" });
   const [studentId, setStudentId] = useState("");
+  const [resumeEmail, setResumeEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [pendingRegistration, setPendingRegistration] = useState(null);
+  const [info, setInfo] = useState("");
+  const [showExistingLogin, setShowExistingLogin] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(null); // { student_id, drive, full_name }
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  async function startSession(res) {
-    tokens.set(res);          // { access_token, refresh_token }
-    await reload();           // become the student
-    setDone(res);
-  }
-
   async function register(e) {
     e.preventDefault();
-    setBusy(true); setErr("");
+    setBusy(true); setErr(""); setInfo(""); setShowExistingLogin(false);
     try {
       const res = await api.attendDrive(form);
-      await startSession(res);
+      setPendingRegistration(res);
+      setResumeEmail(form.email);
+      setStudentId(res.student_id);
+      setOtpSent(true);
+      setInfo(`We sent a sign-in code to ${form.email}. Enter it to finish registration.`);
     } catch (e2) {
-      setErr(e2?.status === 409
-        ? (e2.message || "Registration is closed right now.")
-        : (e2?.details?.[0]?.msg || e2?.message || "Could not register — check your details."));
+      setShowExistingLogin(e2?.code === "account_exists");
+      setErr(e2?.code === "account_exists"
+        ? "This email already has a Lityra Hire account. Sign in with an email code."
+        : (e2?.status === 409 ? (e2.message || "Registration is closed right now.")
+          : (e2?.details?.[0]?.msg || e2?.message || "Could not register — check your details.")));
     } finally { setBusy(false); }
   }
 
   async function resume(e) {
     e.preventDefault();
+    setBusy(true); setErr(""); setInfo(""); setPendingRegistration(null);
+    try {
+      await api.attendResume(studentId.trim(), resumeEmail.trim());
+      setOtpSent(true);
+      setInfo("If those details match a registration, an email code has been sent.");
+    } catch (e2) {
+      setErr(e2?.message || "Could not request a sign-in code.");
+    } finally { setBusy(false); }
+  }
+
+  async function verifyCode(e) {
+    e.preventDefault();
     setBusy(true); setErr("");
     try {
-      const res = await api.attendResume(studentId.trim());
-      await startSession(res);
+      const session = await api.verifyOtp(resumeEmail.trim(), code, "hire");
+      tokens.set(session);
+      await reload();
+      const registered = pendingRegistration;
+      if (registered) await api.attendComplete();
+      setDone(registered || { student_id: studentId.trim(), drive: null });
     } catch (e2) {
-      setErr(e2?.message || "That Student ID was not found.");
+      setErr(e2?.message || "That code is invalid or expired.");
     } finally { setBusy(false); }
   }
 
@@ -59,7 +80,7 @@ export default function AttendDrive() {
           <div className="mx-auto grid place-items-center h-14 w-14 rounded-full bg-teal-500/10 text-teal-600">
             <CheckCircle2 size={30} />
           </div>
-          <h1 className="mt-4 font-display text-2xl font-bold text-ink-900">You're registered!</h1>
+          <h1 className="mt-4 font-display text-2xl font-bold text-ink-900">You're signed in!</h1>
           <p className="mt-1 text-slate-500">
             {done.drive?.title ? <>for <span className="font-medium text-ink-900">{done.drive.title}</span></> : "for the drive"}
             {done.drive?.company_name ? ` · ${done.drive.company_name}` : ""}
@@ -77,7 +98,7 @@ export default function AttendDrive() {
               </button>
             </div>
             <p className="mt-2 text-xs text-slate-500">
-              Save this ID — use it to sign back in (no password needed).
+              Keep this ID with your records. Signing in also requires a code sent to your email.
             </p>
           </div>
 
@@ -91,7 +112,7 @@ export default function AttendDrive() {
 
   // ---- register / resume forms ----
   return (
-    <Shell>
+    <div className="page-composition page-composition-enrollment"><Shell>
       <Card className="p-8">
         <div className="flex items-center gap-3">
           <span className="grid place-items-center h-11 w-11 rounded-md bg-invert-900 text-white">
@@ -99,16 +120,16 @@ export default function AttendDrive() {
           </span>
           <div>
             <h1 className="font-display text-xl font-bold text-ink-900">Attend Drive</h1>
-            <p className="text-sm text-slate-500">Register for the recruitment drive — no account needed.</p>
+            <p className="text-sm text-slate-500">Register for the recruitment drive with email verification.</p>
           </div>
         </div>
 
         <div className="mt-6 flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
-          <button onClick={() => { setMode("register"); setErr(""); }}
+          <button onClick={() => { setMode("register"); setErr(""); setInfo(""); setOtpSent(false); setPendingRegistration(null); }}
             className={`flex-1 h-9 rounded-md font-medium ${mode === "register" ? "bg-surface shadow text-ink-900" : "text-slate-500"}`}>
             New registration
           </button>
-          <button onClick={() => { setMode("resume"); setErr(""); }}
+          <button onClick={() => { setMode("resume"); setErr(""); setInfo(""); setOtpSent(false); setPendingRegistration(null); }}
             className={`flex-1 h-9 rounded-md font-medium ${mode === "resume" ? "bg-surface shadow text-ink-900" : "text-slate-500"}`}>
             I have a Student ID
           </button>
@@ -119,8 +140,26 @@ export default function AttendDrive() {
             <AlertTriangle size={15} /> {err}
           </div>
         )}
+        {info && <div className="mt-4 rounded-md bg-teal-500/10 text-teal-700 p-3 text-sm">{info}</div>}
+        {showExistingLogin && <p className="mt-2 text-sm text-brand-600"><Link to="/hire/login">Go to Lityra Hire sign-in</Link></p>}
 
-        {mode === "register" ? (
+        {otpSent ? (
+          <form onSubmit={verifyCode} className="mt-5 space-y-3">
+            <Field label="Email code">
+              <Input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                inputMode="numeric" autoComplete="one-time-code" placeholder="6-digit code" required />
+            </Field>
+            <Button type="submit" className="w-full" size="lg" disabled={busy || code.length < 6}>
+              {busy ? "Verifying…" : <>Verify &amp; continue <ArrowRight size={18} /></>}
+            </Button>
+            <button type="button" disabled={busy} onClick={async () => {
+              setBusy(true); setErr("");
+              try { await api.requestOtp(resumeEmail.trim(), "hire"); setInfo(`A new code was sent to ${resumeEmail}.`); }
+              catch (e2) { setErr(e2?.message || "Could not resend the code."); }
+              finally { setBusy(false); }
+            }} className="w-full text-sm text-slate-500 hover:text-ink-900">Resend code</button>
+          </form>
+        ) : mode === "register" ? (
           <form onSubmit={register} className="mt-5 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Field label="First name"><Input value={form.first_name} onChange={set("first_name")} required /></Field>
@@ -143,10 +182,14 @@ export default function AttendDrive() {
           <form onSubmit={resume} className="mt-5 space-y-3">
             <Field label="Student ID">
               <Input value={studentId} onChange={(e) => setStudentId(e.target.value)}
-                placeholder="LARE-2026-0001" required />
+                placeholder="LITYRA-2026-0001" required />
+            </Field>
+            <Field label="Registered email">
+              <Input type="email" autoComplete="email" value={resumeEmail}
+                onChange={(e) => setResumeEmail(e.target.value)} required />
             </Field>
             <Button type="submit" className="w-full" size="lg" disabled={busy}>
-              {busy ? "Signing in…" : <>Continue <ArrowRight size={18} /></>}
+              {busy ? "Sending code…" : <>Email me a code <ArrowRight size={18} /></>}
             </Button>
           </form>
         )}
@@ -155,7 +198,7 @@ export default function AttendDrive() {
           Staff or college? <Link to="/login" className="text-brand-600 hover:underline">Sign in here</Link>
         </p>
       </Card>
-    </Shell>
+    </Shell></div>
   );
 }
 
@@ -165,12 +208,12 @@ function Shell({ children }) {
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center text-center mb-6">
           <Logo size={132} />
-          <p className="mt-3 font-display font-bold text-3xl text-ink-900">LARE Hire</p>
-          <p className="text-base text-amber-600 font-medium">Find the right talent, faster.</p>
+          <p className="mt-3 font-display font-bold text-3xl text-ink-900">Lityra Hire</p>
+          <p className="text-base text-amber-600 font-medium">Write Your Future</p>
         </div>
         {children}
         <p className="mt-6 text-center text-[11px] text-slate-400">
-          A unit of LARE Consulting &amp; Technology Pvt. Ltd.
+          GenZify · Engineering Human Potential Through Technology
         </p>
       </div>
     </div>

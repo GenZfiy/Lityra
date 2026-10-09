@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import "../styles/learner-candidate-pages.css";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { PlayCircle, FileText, BookOpen, Lock, CheckCircle2, Layers, ChevronRight } from "lucide-react";
 import { Card, Badge, Button } from "../components/ui/primitives.jsx";
@@ -11,6 +12,7 @@ import { demoCurriculum, demoPlaylist, DEMO_LEARNER_ID } from "../lib/demo.js";
 const TYPE_ICON = { video: PlayCircle, reading: FileText, interactive: Layers, pdf: FileText };
 
 export default function MyLearning() {
+  const reduceMotion = useReducedMotion();
   const { user } = useAuth();
   const learnerId = user?.id || DEMO_LEARNER_ID;
   const curriculum = useAsync(
@@ -22,35 +24,31 @@ export default function MyLearning() {
     [learnerId],
   );
 
-  if (curriculum.loading) return <Loading />;
+  if (curriculum.loading) return <Loading label="Loading your curriculum…" />;
   const tree = curriculum.data;
   const items = playlist.data || [];
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning"><div className="learning-studio-page">
       <PageHeader
         title="My Learning"
         subtitle={tree?.name}
         right={<DataSource live={curriculum.live} />}
       />
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="learning-studio-grid">
         {/* Curriculum tree */}
         <div className="lg:col-span-2 space-y-4">
           {(tree?.years || []).map((year) => (
-            <Card key={year.year_no} className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="grid place-items-center h-8 w-8 rounded-md bg-invert-900 text-white font-display font-semibold text-sm">
-                  {year.year_no}
-                </span>
-                <div>
-                  <h2 className="font-display font-semibold text-ink-900">{year.theme}</h2>
-                  <p className="text-xs text-slate-400">Year {year.year_no}</p>
-                </div>
-              </div>
+            <Card key={year.year_no} className="learning-year-card p-6">
+              <header className="learning-year-heading">
+                <span className="learning-year-mark">{String(year.year_no).padStart(2, "0")}</span>
+                <div><p className="learning-year-kicker">Learning year</p><h2 className="font-display font-semibold text-ink-900">{year.theme}</h2></div>
+                <span className="learning-year-count">{year.modules?.length || 0} modules</span>
+              </header>
               <div className="space-y-3">
                 {year.modules.map((m) => (
-                  <div key={m.id} className="rounded-md border border-slate-100 p-4">
+                  <div key={m.id} className="learning-module rounded-md border border-slate-100 p-4">
                     <div className="flex items-center justify-between">
                       <p className="font-medium text-ink-900 flex items-center gap-2">
                         <BookOpen size={16} className="text-brand-500" /> {m.title}
@@ -83,7 +81,7 @@ export default function MyLearning() {
 
         {/* Playlist */}
         <div>
-          <Card className="p-6">
+          <Card className="learning-playlist p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display font-semibold text-ink-900">Your playlist</h2>
               <DataSource live={playlist.live} />
@@ -95,9 +93,9 @@ export default function MyLearning() {
                 return (
                   <motion.div
                     key={it.id}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    transition={reduceMotion ? { duration: 0 } : { delay: i * 0.05 }}
                     className={`rounded-md border p-3 flex items-center gap-3 ${
                       it.unlocked ? "border-slate-100" : "border-slate-100 opacity-60"
                     }`}
@@ -125,6 +123,6 @@ export default function MyLearning() {
           </Card>
         </div>
       </div>
-    </div>
+    </div></div>
   );
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Linux twin of run-all.ps1 — start the gateway + 26 services from the active
+# Linux twin of run-all.ps1 — start the gateway + 31 services from the active
 # venv, each on its own port. Loads backend/.env, gives each service its own
 # schema (Postgres) or SQLite file, runs init-db, then serves in the background.
 #

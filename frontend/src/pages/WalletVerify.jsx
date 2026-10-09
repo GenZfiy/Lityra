@@ -4,7 +4,7 @@ import { ShieldCheck, ShieldX, Code2, Compass } from "lucide-react";
 import { Logo } from "../components/ui/Logo.jsx";
 import { api } from "../lib/api.js";
 
-// PUBLIC page (no login) — a recruiter or anyone can confirm a shared LARE
+// PUBLIC page (no login) — a recruiter or anyone can confirm a shared Lityra
 // wallet credential is authentic and current.
 export default function WalletVerify() {
   const { verifyId } = useParams();
@@ -28,7 +28,7 @@ export default function WalletVerify() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center px-4 py-10">
+    <div className="page-composition page-composition-verification"><div className="min-h-screen bg-slate-50 flex flex-col items-center px-4 py-10">
       <div className="w-full max-w-xl">
         <div className="flex items-center justify-between mb-6">
           <Logo />
@@ -46,7 +46,7 @@ export default function WalletVerify() {
               </span>
               <div>
                 <p className="font-display text-lg font-bold text-ink-900">Authentic & current</p>
-                <p className="text-sm text-teal-700">Verified by LARE Learn · issued {(d.issued_at || "").slice(0, 10)}</p>
+                <p className="text-sm text-teal-700">Verified by Lityra Learn · issued {(d.issued_at || "").slice(0, 10)}</p>
               </div>
             </div>
             <div className="p-6">
@@ -90,10 +90,10 @@ export default function WalletVerify() {
         )}
 
         <p className="mt-6 text-center text-xs text-slate-400">
-          Powered by <Link to="/" className="text-brand-600 hover:underline">LARE</Link> — verified human competence.
+          Powered by <Link to="/" className="text-brand-600 hover:underline">Lityra</Link> — verified human competence.
         </p>
       </div>
-    </div>
+    </div></div>
   );
 }
 

@@ -6,7 +6,7 @@
 ---
 
 ## 1. Purpose
-Single entry point for every client request into the LARE platform. Terminates the public API surface, verifies identity, enforces coarse authorization and rate limits, routes to the correct microservice, and standardizes cross-cutting concerns (CORS, request IDs, logging, versioning). It keeps individual services thin and consistent.
+Single entry point for every client request into the Lityra platform. Terminates the public API surface, verifies identity, enforces coarse authorization and rate limits, routes to the correct microservice, and standardizes cross-cutting concerns (CORS, request IDs, logging, versioning). It keeps individual services thin and consistent.
 
 ## 2. Responsibilities
 - Expose the public contract `/api/v1/*` and route to internal services.

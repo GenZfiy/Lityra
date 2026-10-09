@@ -1,3 +1,4 @@
+import "../../styles/institution-operations-pages.css";
 import { useEffect, useState } from "react";
 import { BookOpen, Plus, Layers, FileText, Rocket, CheckCircle2, ChevronRight, Pencil } from "lucide-react";
 import { Card, Badge, Button, Field, Input } from "../../components/ui/primitives.jsx";
@@ -11,7 +12,7 @@ import LessonEditor from "./LessonEditor.jsx";
 export default function CurriculumStudio({ embedded = false }) {
   const [curricula, setCurricula] = useState([]);
   const [curriculum, setCurriculum] = useState(null);
-  const [name, setName] = useState("LARE 4-Year Programme");
+  const [name, setName] = useState("Lityra 4-Year Programme");
   const [status, setStatus] = useState("draft");
   const [years, setYears] = useState([]);
   const [audience, setAudience] = useState("all");   // "to whom" a new module targets
@@ -170,7 +171,7 @@ export default function CurriculumStudio({ embedded = false }) {
   );
 
   return (
-    <div>
+    <div className="page-composition page-composition-institution institution-ops institution-ops-curriculum"><div>
       {embedded ? (
         <div className="mb-4 flex items-center justify-between gap-3">
           <p className="text-sm text-slate-500 truncate">{curriculum.name}</p>
@@ -214,12 +215,13 @@ export default function CurriculumStudio({ embedded = false }) {
         )}
       </div>
 
-      <div className="space-y-4">
+      <section className="curriculum-map" aria-label="Curriculum year map">
+        <header className="curriculum-map-heading"><div><span>PROGRAMME STRUCTURE</span><p>Build and publish the sequence learners follow.</p></div><small>{years.reduce((n, y) => n + (y.modules || []).length, 0)} modules across {years.length} years</small></header>
         {years.map((y, yi) => (
-          <Card key={y.id} className="p-5">
+          <Card key={y.id} className="curriculum-year-node p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-display font-semibold text-ink-900 flex items-center gap-2">
-                <Layers size={17} className="text-amber-500" /> Year {y.year_no}
+                <span className="curriculum-year-index">{String(y.year_no).padStart(2,"0")}</span><Layers size={17} className="text-amber-500" /> Year {y.year_no}
                 <span className="text-sm font-normal text-slate-400">· {y.theme}</span>
               </h3>
               {status !== "published" && (
@@ -273,7 +275,7 @@ export default function CurriculumStudio({ embedded = false }) {
             </div>
           </Card>
         ))}
-      </div>
+      </section>
 
       {status !== "published" && (
         <button
@@ -292,6 +294,6 @@ export default function CurriculumStudio({ embedded = false }) {
           onSaved={(count) => setLessonBlocks(editing.id, count)}
         />
       )}
-    </div>
+    </div></div>
   );
 }

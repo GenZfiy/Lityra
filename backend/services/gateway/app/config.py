@@ -48,6 +48,8 @@ class GatewayConfig(BaseConfig):
     ROUTES = {
         "/auth/": "auth",
         "/lms/v1/colleges": "lms-institution",
+        "/lms/v1/training-centers": "lms-institution",
+        "/lms/v1/training-batches": "lms-institution",
         "/lms/v1/access": "lms-institution",
         "/lms/v1/branches": "lms-institution",
         "/lms/v1/cohorts": "lms-institution",
@@ -119,21 +121,20 @@ class GatewayConfig(BaseConfig):
     }
 
     # Paths that bypass auth (public). Matched by prefix.
+    PUBLIC_PATHS = [
+        "/auth/v1/register", "/auth/v1/login", "/auth/v1/refresh",
+        "/auth/v1/otp/request", "/auth/v1/otp/verify",
+        "/auth/v1/password/forgot", "/auth/v1/password/reset",
+        "/auth/v1/email/confirm", "/auth/v1/.well-known/jwks.json",
+        "/drive/v1/attend",     # starts an email-verified registration
+        "/drive/v1/attend/resume",  # requests an OTP; does not return tokens
+        "/drive/v1/attend/complete", # handler requires a Hire access token
+        "/org/v1/resolve",      # white-label branding by domain (pre-login)
+    ]
     PUBLIC_PREFIXES = [
-        "/auth/v1/register",
-        "/auth/v1/login",
-        "/auth/v1/refresh",
-        "/auth/v1/otp/request",
-        "/auth/v1/otp/verify",
-        "/auth/v1/password/forgot",
-        "/auth/v1/password/reset",
-        "/auth/v1/email/confirm",
-        "/auth/v1/.well-known",
-        "/drive/v1/attend",     # public "Attend Drive" registration + resume
         "/verify/",  # public certificate / offer verification (both prefixes)
         "/files/v1/upload/",    # pre-signed upload (token-authenticated)
         "/files/v1/download/",  # pre-signed download (token-authenticated)
-        "/org/v1/resolve",      # white-label branding by domain (pre-login)
     ]
 
     # Rate limiting (in-memory dev; Redis in prod).

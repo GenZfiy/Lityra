@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from lare_common.db import Base
@@ -36,6 +36,75 @@ class College(Base):
     branches: Mapped[list["Branch"]] = relationship(
         back_populates="college", cascade="all, delete-orphan"
     )
+
+
+class TrainingCenter(Base):
+    """An upskilling provider using the same institution-scoped role bindings."""
+    __tablename__ = "training_centers"
+    __table_args__ = (UniqueConstraint("code", name="uq_training_center_code"),)
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="lare", index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    code: Mapped[str] = mapped_column(String(32), nullable=False)
+    city: Mapped[str | None] = mapped_column(String(128))
+    address: Mapped[str | None] = mapped_column(String(512))
+    focus: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(16), default="active")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class TrainingProgram(Base):
+    __tablename__ = "training_programs"
+    __table_args__ = (
+        UniqueConstraint("center_id", "code", name="uq_training_program_code"),
+        CheckConstraint("duration_months IN (2, 3, 6)", name="ck_training_program_duration"),
+        CheckConstraint("audience IN ('students', 'corporate', 'both')", name="ck_training_program_audience"),
+    )
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    center_id: Mapped[str] = mapped_column(ForeignKey("training_centers.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    code: Mapped[str] = mapped_column(String(32), nullable=False)
+    summary: Mapped[str | None] = mapped_column(String(2000))
+    duration_months: Mapped[int] = mapped_column(Integer, nullable=False)
+    audience: Mapped[str] = mapped_column(String(16), default="both", nullable=False)
+    delivery_mode: Mapped[str] = mapped_column(String(16), default="hybrid", nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="active")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class TrainingBatch(Base):
+    __tablename__ = "training_batches"
+    __table_args__ = (UniqueConstraint("center_id", "code", name="uq_training_batch_code"),)
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    center_id: Mapped[str] = mapped_column(ForeignKey("training_centers.id", ondelete="CASCADE"), index=True)
+    program_id: Mapped[str] = mapped_column(ForeignKey("training_programs.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    code: Mapped[str] = mapped_column(String(32), nullable=False)
+    starts_on: Mapped[date] = mapped_column(Date, nullable=False)
+    ends_on: Mapped[date] = mapped_column(Date, nullable=False)
+    capacity: Mapped[int] = mapped_column(Integer, default=30)
+    audience: Mapped[str] = mapped_column(String(16), default="students", nullable=False)
+    organization_name: Mapped[str | None] = mapped_column(String(255))
+    trainer_user_id: Mapped[str | None] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(16), default="enrolling")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class TrainingParticipant(Base):
+    __tablename__ = "training_participants"
+    __table_args__ = (UniqueConstraint("batch_id", "email", name="uq_training_participant_email"),)
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    batch_id: Mapped[str] = mapped_column(ForeignKey("training_batches.id", ondelete="CASCADE"), index=True)
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    participant_type: Mapped[str] = mapped_column(String(24), nullable=False)
+    organization_name: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(16), default="enrolled")
+    enrolled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
 
 class Branch(Base):

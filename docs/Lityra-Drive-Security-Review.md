@@ -1,6 +1,6 @@
-# LARE Drive-OS — Phase 6 Security Review
+# Lityra Drive-OS — Phase 6 Security Review
 
-**Scope:** the five new Drive-OS services — evidence (8027), competency (8028), decision (8029), action (8030), recruit-ai (8031) — and their gateway/east-west wiring. Reviewed against the LARE platform's existing security model (RS256 at the gateway, schema-per-service, `lare_common`).
+**Scope:** the five new Drive-OS services — evidence (8027), competency (8028), decision (8029), action (8030), recruit-ai (8031) — and their gateway/east-west wiring. Reviewed against the Lityra platform's existing security model (RS256 at the gateway, schema-per-service, `lare_common`).
 
 **Method:** manual review of routes (authZ), schemas (input validation), data model (immutability/PII), cross-service calls (trust), and the raw-SQL hardening step. The end-to-end chain is exercised by `backend/tests/integration_drive_os.py` (13/13), which includes an RBAC-negative check (student blocked).
 

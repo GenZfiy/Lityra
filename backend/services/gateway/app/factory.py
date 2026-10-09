@@ -31,7 +31,9 @@ def build_app() -> Flask:
         ident = getattr(g, "identity_claims", None)
         if ident:
             return f"user:{ident['sub']}"
-        return f"ip:{request.headers.get('X-Forwarded-For', request.remote_addr)}"
+        # X-Real-IP is overwritten by the trusted edge proxy. Do not trust an
+        # arbitrary client-supplied X-Forwarded-For chain for rate-limit keys.
+        return f"ip:{request.headers.get('X-Real-IP') or request.remote_addr}"
 
     @app.get("/health")
     def health():
@@ -47,7 +49,10 @@ def build_app() -> Flask:
                 results[key] = r.ok
             except requests.RequestException:
                 results[key] = False
-        return jsonify({"service": cfg.SERVICE_NAME, "upstreams": results})
+        ready = all(results.values())
+        return jsonify({"service": cfg.SERVICE_NAME,
+                        "status": "ready" if ready else "unready",
+                        "upstreams": results}), (200 if ready else 503)
 
     @app.route("/<path:path>", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
     def gateway(path: str):
@@ -80,8 +85,8 @@ def build_app() -> Flask:
             if claims.get("type") != "access":
                 return jsonify(error_payload("unauthorized", "Not an access token")), 401
 
-            # Product isolation: a LARE Learn session may reach only /lms/* (+ the
-            # shared platform routes); a LARE Hire session only /drive/*. The two
+            # Product isolation: a Lityra Learn session may reach only /lms/* (+ the
+            # shared platform routes); a Lityra Hire session only /drive/*. The two
             # are separate accounts, so a token minted for one product must not act
             # in the other. Tokens issued before this rollout have no product claim
             # — those are allowed through (they age out as users re-log in).

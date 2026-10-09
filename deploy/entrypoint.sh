@@ -35,6 +35,12 @@ if [[ "${SKIP_INIT:-0}" != "1" ]]; then
   done < <(tr -d '\r' < "$REGISTRY")
 fi
 
+# Old certificate verification URLs used a short, enumerable code. Rotate them
+# before services start; this intentionally invalidates previously shared links.
+( cd "$ROOT/services/certification" \
+  && DB_SCHEMA="$(schema_for certification)" SERVICE_NAME=certification \
+     python manage.py migrate-verify-ids )
+
 # ---- 2. generate one supervisord [program] per service -----------------------
 mkdir -p /etc/supervisor /var/log/lare
 cat > "$CONF" <<'HEADER'
@@ -77,5 +83,5 @@ stderr_logfile_maxbytes=0
 PROG
 done < <(tr -d '\r' < "$REGISTRY")
 
-echo "[entrypoint] launching supervisord (gateway + 26 services)"
+echo "[entrypoint] launching supervisord (gateway + 31 services)"
 exec supervisord -c "$CONF" -n

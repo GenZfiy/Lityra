@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -9,9 +10,9 @@ import { PageHeader, Loading, EmptyState } from "../components/ui/states.jsx";
 import { api } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 
-// LARE Learn — Skills-to-Opportunity (Learn domain only). Shows how ready a
+// Lityra Learn — Skills-to-Opportunity (Learn domain only). Shows how ready a
 // student is for each career-role target, from their skill twin. Independent of
-// LARE Hire: no live drives are shown here.
+// Lityra Hire: no live drives are shown here.
 export default function CareerReadiness({ candidateId }) {
   const { user } = useAuth();
   const id = candidateId || user?.id;
@@ -28,13 +29,13 @@ export default function CareerReadiness({ candidateId }) {
     })();
   }, [id]);
 
-  if (loading) return <Loading />;
+  if (loading) return <Loading label="Loading role readiness…" />;
 
   const roles = data?.readiness || [];
   const noData = !data?.has_data;
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-career-readiness"><div>
       <PageHeader
         title="Career Readiness"
         subtitle="How close are you to the roles you want? This maps your skills to what each career needs — and shows exactly what to learn next."
@@ -63,18 +64,18 @@ export default function CareerReadiness({ candidateId }) {
         <EmptyState title="No career roles yet"
           hint="Your trainer hasn't set up career targets. Check back soon." />
       ) : (
-        <div className="space-y-5">
+        <section className="career-role-path space-y-5" aria-label="Career readiness by role">
           {roles.map((r) => <RoleCard key={r.id} r={r} />)}
-        </div>
+        </section>
       )}
-    </div>
+    </div></div>
   );
 }
 
 function RoleCard({ r }) {
   const [open, setOpen] = useState(false);
   return (
-    <Card className="p-6">
+    <Card className="career-role-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h3 className="font-display text-lg font-semibold text-ink-900">{r.title}</h3>

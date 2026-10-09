@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useState } from "react";
 import { Award, ShieldCheck, Search, ExternalLink, BadgeCheck, X, Printer, Download } from "lucide-react";
 import { Card, Badge, Button, Input } from "../components/ui/primitives.jsx";
@@ -23,25 +24,25 @@ export default function Certificates() {
   const loaded = useAsync(() => withFallback(api.certificates(learnerId), demoCertificates), [learnerId]);
   const [selected, setSelected] = useState(null);
 
-  if (loaded.loading) return <Loading />;
+  if (loaded.loading) return <Loading label="Loading your certificates…" />;
   const certs = loaded.data || [];
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-certificates"><div>
       <PageHeader
         title="Certificates"
-        subtitle="Your 4-year programme certificate series"
+        subtitle="Programme credentials"
         right={<DataSource live={loaded.live} />}
       />
-      <div className="grid lg:grid-cols-[1fr_360px] gap-6">
-        <div className="space-y-4">
+      <div className="certificate-evidence-desk grid lg:grid-cols-[1fr_360px] gap-6">
+        <div className="certificate-records space-y-4">
           {certs.map((c) => (
             <button
               key={c.verify_id || c.year_no}
               onClick={() => setSelected(c)}
               className="w-full text-left"
             >
-              <Card className="p-6 relative overflow-hidden hover:border-brand-300 hover:shadow-lift transition">
+              <Card className="certificate-record p-6 relative overflow-hidden hover:border-brand-300 hover:shadow-lift transition">
                 <div className="absolute top-0 right-0 h-24 w-24 bg-gradient-to-br from-amber-400/20 to-transparent rounded-bl-full" />
                 <div className="flex items-start gap-4">
                   <span className="relative grid place-items-center h-14 w-14 rounded-full text-white shrink-0"
@@ -76,7 +77,7 @@ export default function Certificates() {
       </div>
 
       {selected && <CertificateModal cert={selected} onClose={() => setSelected(null)} />}
-    </div>
+    </div></div>
   );
 }
 
@@ -106,13 +107,13 @@ function CertificateModal({ cert, onClose, verifiedBanner }) {
               </Button>
             )}
           </div>
-          <button onClick={onClose} className="grid place-items-center h-9 w-9 rounded-full bg-white/90 text-slate-500 hover:text-ink-900">
+          <button onClick={onClose} className="grid place-items-center h-9 w-9 rounded-full bg-surface/90 text-slate-500 hover:text-ink-900">
             <X size={20} />
           </button>
         </div>
         {verifiedBanner && (
           <div className="mb-3 rounded-lg bg-teal-500/10 border border-teal-200 p-3 text-sm text-teal-800 flex items-center gap-2">
-            <ShieldCheck size={16} className="text-teal-600" /> Authentic — verified by LARE Learn ({cert.verify_id})
+            <ShieldCheck size={16} className="text-teal-600" /> Authentic — verified by Lityra Learn ({cert.verify_id})
           </div>
         )}
         <div className="rounded-lg shadow-2xl overflow-hidden"
@@ -153,9 +154,9 @@ function VerifyWidget() {
       <h2 className="font-display font-semibold text-ink-900 mb-1 flex items-center gap-2">
         <Search size={18} className="text-brand-500" /> Verify a certificate
       </h2>
-      <p className="text-xs text-slate-400 mb-4">Enter a certificate's verify id (e.g. LARE-VER-4821) — anyone can confirm it.</p>
+      <p className="text-xs text-slate-400 mb-4">Enter a certificate verification ID — anyone can confirm it.</p>
       <form onSubmit={verify} className="flex gap-2">
-        <Input value={vid} onChange={(e) => setVid(e.target.value)} placeholder="LARE-VER-…" />
+        <Input value={vid} onChange={(e) => setVid(e.target.value)} placeholder="Paste verification ID" />
         <Button type="submit" disabled={busy}>{busy ? "…" : "Verify"}</Button>
       </form>
       {error && (

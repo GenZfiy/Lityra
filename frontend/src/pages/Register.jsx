@@ -5,10 +5,10 @@ import { AuthLayout } from "./AuthLayout.jsx";
 import { Button, Field, Input } from "../components/ui/primitives.jsx";
 import { useAuth } from "../lib/auth.jsx";
 
-const NAME = { learn: "LARE Learn", hire: "LARE Hire" };
+const NAME = { learn: "Lityra Learn", hire: "Lityra Hire" };
 const BLURB = {
-  learn: "Start your four-year journey with LARE Learn.",
-  hire: "Create your LARE Hire account to run recruitment drives.",
+  learn: "Create an account to build your skills with Lityra Learn.",
+  hire: "Create your Lityra Hire account to run recruitment drives.",
 };
 
 export default function Register({ product = "learn" }) {

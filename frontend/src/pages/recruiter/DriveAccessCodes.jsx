@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { KeyRound, Plus, RefreshCw, Copy, Check, Power } from "lucide-react";
+import { KeyRound, RefreshCw, Copy, Check, Power } from "lucide-react";
 import { Card, Button, Badge, Field, Input } from "../../components/ui/primitives.jsx";
 import { PageHeader, Loading, EmptyState } from "../../components/ui/states.jsx";
 import { api } from "../../lib/api.js";
+import "../../styles/recruiter-operations-pages.css";
 
 // Recruiter: create & manage Drive Access IDs. Each code maps to ONE drive;
 // candidates present it (after Hire login) to access only that drive.
@@ -17,12 +18,14 @@ export default function DriveAccessCodes() {
   const [copied, setCopied] = useState("");
 
   async function loadCodes() {
-    try { setCodes(await api.listDriveAccessCodes()); } catch { setCodes([]); }
+    try { setCodes(await api.listDriveAccessCodes()); }
+    catch (error) { setCodes([]); setErr(error?.message || "Drive access IDs could not be loaded."); }
   }
 
   useEffect(() => {
     (async () => {
-      try { setDrives(await api.drives()); } catch { setDrives([]); }
+      try { setDrives(await api.drives()); }
+      catch (error) { setDrives([]); setErr(error?.message || "Drive list could not be loaded."); }
       await loadCodes();
       setLoading(false);
     })();
@@ -32,8 +35,11 @@ export default function DriveAccessCodes() {
     const d = drives.find((x) => x.id === id);
     return d ? `${d.title}${d.company_name ? ` · ${d.company_name}` : ""}` : id;
   };
+  const activeCodes = codes.filter((code) => code.status === "active").length;
+  const totalUses = codes.reduce((sum, code) => sum + (Number(code.used_count) || 0), 0);
 
-  async function create() {
+  async function create(event) {
+    event?.preventDefault();
     if (!driveId) return;
     setErr(""); setBusy(true);
     try {
@@ -44,35 +50,36 @@ export default function DriveAccessCodes() {
     finally { setBusy(false); }
   }
   async function toggle(c) {
-    await api.setDriveAccessCodeStatus(c.id, c.status === "active" ? "inactive" : "active").catch(() => {});
-    await loadCodes();
+    setErr("");
+    try { await api.setDriveAccessCodeStatus(c.id, c.status === "active" ? "inactive" : "active"); await loadCodes(); }
+    catch (error) { setErr(error?.message || "Access ID status could not be changed."); }
   }
   async function regen(c) {
-    await api.regenerateDriveAccessCode(c.id).catch(() => {});
-    await loadCodes();
+    setErr("");
+    try { await api.regenerateDriveAccessCode(c.id); await loadCodes(); }
+    catch (error) { setErr(error?.message || "Access ID could not be regenerated."); }
   }
-  function copy(code) {
-    navigator.clipboard?.writeText(code);
-    setCopied(code); setTimeout(() => setCopied(""), 1500);
+  async function copy(code) {
+    setErr("");
+    try { if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable in this browser."); await navigator.clipboard.writeText(code); setCopied(code); setTimeout(() => setCopied(""), 1500); }
+    catch (error) { setErr(error?.message || "Access ID could not be copied."); }
   }
 
   if (loading) return <Loading />;
 
   return (
-    <div>
-      <PageHeader
+    <main className="page-composition page-composition-recruiter hire-ops hire-ops--codes"><div>
+      <header className="hire-ops-intro hire-codes-intro"><div><span className="hire-ops-kicker">Candidate entry · scoped access</span><PageHeader
         title="Drive Access IDs"
         subtitle="One secure code per recruitment drive. Candidates sign in and enter it to access only that drive."
-      />
+      /></div><dl className="hire-codes-readouts"><div><dt>Active IDs</dt><dd>{activeCodes}</dd></div><div><dt>Total IDs</dt><dd>{codes.length}</dd></div><div><dt>Entries used</dt><dd>{totalUses}</dd></div></dl></header>
+      {err && <p role="alert" className="hire-drive-error">{err}</p>}
 
-      <Card className="p-6 mb-6">
-        <h3 className="font-display font-semibold text-ink-900 flex items-center gap-2 mb-4">
-          <Plus size={18} className="text-amber-500" /> Generate a new Drive Access ID
-        </h3>
-        {err && <div className="rounded-md bg-rose-500/10 text-rose-600 text-sm px-3.5 py-2.5 mb-4">{err}</div>}
-        <div className="grid sm:grid-cols-3 gap-4 items-end">
+      <div className="hire-codes-layout"><Card className="hire-codes-create p-6 mb-6">
+        <div className="hire-codes-form-head"><span>01</span><div><p className="hire-ops-kicker">Issue credentials</p><h3 className="font-display font-semibold text-ink-900">Create a drive ID</h3><p>Assign the access credential to one drive and label the intended audience.</p></div></div>
+        <form className="hire-codes-fields" onSubmit={create}>
           <Field label="Drive">
-            <select value={driveId} onChange={(e) => setDriveId(e.target.value)}
+            <select required value={driveId} onChange={(e) => setDriveId(e.target.value)}
               className="w-full h-11 rounded-lg border border-slate-200 bg-surface px-3 text-sm">
               <option value="">Select drive…</option>
               {drives.map((d) => <option key={d.id} value={d.id}>{d.title}{d.company_name ? ` · ${d.company_name}` : ""}</option>)}
@@ -81,56 +88,36 @@ export default function DriveAccessCodes() {
           <Field label="Label (optional)">
             <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Campus A batch" />
           </Field>
-          <Button variant="amber" onClick={create} disabled={busy || !driveId}>
+          <Button type="submit" variant="amber" disabled={busy || !driveId}>
             <KeyRound size={16} /> {busy ? "Generating…" : "Generate"}
           </Button>
-        </div>
+        </form>
       </Card>
 
-      {codes.length === 0 ? (
+      <section className="hire-code-ledger" aria-label="Drive access code ledger"><header className="hire-code-ledger-heading"><div><p className="hire-ops-kicker">02 · Credential ledger</p><h2>Access by drive</h2><p>Copy, rotate, or suspend a credential. Each code stays scoped to its assigned drive.</p></div></header>{codes.length === 0 ? (
         <EmptyState title="No Drive Access IDs yet" hint="Generate one above for a drive to let its candidates in." />
       ) : (
-        <Card className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-slate-500 border-b border-slate-100">
-                  <th className="px-5 py-3 font-medium">Access ID</th>
-                  <th className="px-5 py-3 font-medium">Drive</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium tabular-nums">Uses</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {codes.map((c) => (
-                  <tr key={c.id} className="border-b border-slate-50 last:border-0">
-                    <td className="px-5 py-3">
-                      <button onClick={() => copy(c.code)} className="font-mono font-semibold text-ink-900 inline-flex items-center gap-1.5 hover:text-amber-600">
-                        {c.code}
-                        {copied === c.code ? <Check size={14} className="text-teal-600" /> : <Copy size={13} className="text-slate-300" />}
-                      </button>
-                    </td>
-                    <td className="px-5 py-3 text-slate-600">{driveName(c.drive_id)}{c.label ? ` · ${c.label}` : ""}</td>
-                    <td className="px-5 py-3"><Badge tone={c.status === "active" ? "teal" : "slate"}>{c.status}</Badge></td>
-                    <td className="px-5 py-3 tabular-nums text-slate-500">{c.used_count}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="secondary" size="sm" onClick={() => toggle(c)}>
-                          <Power size={14} /> {c.status === "active" ? "Deactivate" : "Activate"}
-                        </Button>
-                        <Button variant="secondary" size="sm" onClick={() => regen(c)}>
-                          <RefreshCw size={14} /> Regenerate
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
-    </div>
+        <ol className="hire-code-list">
+          {codes.map((c, index) => <li key={c.id} className="hire-code-record">
+            <div className="hire-code-record-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</div>
+            <div className="hire-code-record-main">
+              <div className="hire-code-identity">
+                <button onClick={() => copy(c.code)} aria-label={`${copied === c.code ? "Copied" : "Copy"} access ID ${c.code}`} className="hire-code-value font-mono font-semibold hover:text-amber-600">
+                  <span>{c.code}</span>{copied === c.code ? <Check size={15} className="text-teal-600" /> : <Copy size={14} className="text-slate-400" />}
+                </button>
+                <Badge tone={c.status === "active" ? "teal" : "slate"}>{c.status}</Badge>
+              </div>
+              <h3>{driveName(c.drive_id)}</h3>
+              {c.label && <p>{c.label}</p>}
+            </div>
+            <div className="hire-code-usage"><strong>{c.used_count}</strong><span>uses</span></div>
+            <div className="hire-code-actions">
+              <Button variant="secondary" size="sm" onClick={() => toggle(c)}><Power size={14} /> {c.status === "active" ? "Deactivate" : "Activate"}</Button>
+              <Button variant="secondary" size="sm" onClick={() => regen(c)}><RefreshCw size={14} /> Regenerate</Button>
+            </div>
+          </li>)}
+        </ol>
+      )}</section></div>
+    </div></main>
   );
 }

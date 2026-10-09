@@ -38,12 +38,16 @@ class Database:
         else:
             # Pool sizing depends on the DB endpoint:
             #  * Session pooler (Supabase port 5432) / direct: holds one server
-            #    connection per client, so with ~26 services the pool MUST be
+            #    connection per client, so with ~31 services the pool MUST be
             #    small or Postgres runs out of slots. Default is tuned for this.
             #  * Transaction pooler (Supabase port 6543): multiplexes — you can
             #    safely raise DB_POOL_SIZE to match the web thread count.
             engine_kw["pool_size"] = int(os.getenv("DB_POOL_SIZE", "2"))
-            engine_kw["max_overflow"] = int(os.getenv("DB_MAX_OVERFLOW", "3"))
+            # With many independently-running services, overflow multiplies
+            # the possible Postgres sessions across the whole deployment.
+            # Keep each service at its configured base pool unless explicitly
+            # raised for a larger database plan.
+            engine_kw["max_overflow"] = int(os.getenv("DB_MAX_OVERFLOW", "0"))
             engine_kw["pool_recycle"] = int(os.getenv("DB_POOL_RECYCLE", "1800"))
             engine_kw["pool_timeout"] = int(os.getenv("DB_POOL_TIMEOUT", "30"))
             # Test a pooled connection before use and transparently reconnect if

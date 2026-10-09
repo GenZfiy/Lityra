@@ -6,7 +6,7 @@ import { Button } from "../components/ui/primitives.jsx";
 import { api } from "../lib/api.js";
 import { certificateHtml, printCertificate } from "../lib/certificate.js";
 
-// PUBLIC page (no login) — anyone can confirm a LARE certificate is authentic.
+// PUBLIC page (no login) — anyone can confirm a Lityra certificate is authentic.
 export default function CertificateVerify() {
   const { verifyId } = useParams();
   const [state, setState] = useState({ loading: true });
@@ -27,7 +27,7 @@ export default function CertificateVerify() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center px-4 py-10">
+    <div className="page-composition page-composition-verification"><div className="min-h-screen bg-slate-50 flex flex-col items-center px-4 py-10">
       <div className="w-full max-w-3xl">
         <div className="flex items-center justify-between mb-6">
           <Logo />
@@ -44,7 +44,7 @@ export default function CertificateVerify() {
                   <ShieldCheck size={20} strokeWidth={2} />
                   <span aria-hidden className="absolute inset-0 rounded-full" style={{ background: "radial-gradient(circle at 34% 24%, rgba(255,255,255,.5), transparent 46%)" }} />
                 </span>
-                Authentic — issued by LARE Learn
+                Authentic — issued by Lityra Learn
               </span>
               <Button variant="secondary" onClick={() => printCertificate(cert)}><Printer size={15} /> Print</Button>
             </div>
@@ -62,9 +62,9 @@ export default function CertificateVerify() {
         )}
 
         <p className="mt-6 text-center text-xs text-slate-400">
-          Powered by <Link to="/" className="text-brand-600 hover:underline">LARE</Link> — verified human competence.
+          Powered by <Link to="/" className="text-brand-600 hover:underline">Lityra</Link> — verified human competence.
         </p>
       </div>
-    </div>
+    </div></div>
   );
 }

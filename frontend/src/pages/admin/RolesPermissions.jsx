@@ -1,3 +1,4 @@
+import "../../styles/institution-operations-pages.css";
 import { useEffect, useMemo, useState } from "react";
 import {
   Shield, Plus, Copy, Trash2, Save, Power, Lock, Users, Search, X,
@@ -14,6 +15,7 @@ const SCOPES = [
   ["self", "Self only"],
 ];
 const SCOPE_TONE = { platform: "violet", college: "teal", branch: "amber", section: "slate", self: "slate" };
+const roleLabel = (name = "") => name.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 // Admin: the RBAC control room. Roles bundle granular permissions; every API
 // enforces on those permission codes, so what you grant here is what a user can
@@ -125,19 +127,21 @@ export default function RolesPermissions() {
 
   if (loading) return <Loading />;
 
-  const filtered = roles.filter((r) => !q || r.name.toLowerCase().includes(q.toLowerCase()));
+  const filtered = roles.filter((r) => !q || `${r.name} ${r.description || ""}`.toLowerCase().includes(q.toLowerCase()));
 
   return (
-    <div>
+    <div className="page-composition page-composition-institution institution-ops institution-ops-roles"><div>
       <PageHeader
         title="Roles & Permissions"
-        subtitle="Define what each role can do. Permissions are enforced by every backend service — granting here grants the real capability."
+        subtitle="Review built-in college and training-center roles, then configure their access policies."
         right={<Button onClick={startCreate}><Plus size={16} /> New role</Button>}
       />
 
       {err && <div className="rounded-md bg-rose-500/10 text-rose-600 text-sm px-3.5 py-2.5 mb-4">{err}</div>}
 
-      <div className="grid lg:grid-cols-[320px_1fr] gap-5">
+      <section className="policy-workbench" aria-label="Role policy editor">
+      <aside className="policy-role-library">
+        <header className="policy-library-heading"><span>ACCESS POLICY LIBRARY</span><strong>{roles.length}</strong><small>{roles.filter((r) => r.is_active).length} active roles</small></header>
         {/* Roles list */}
         <Card className="p-0 overflow-hidden self-start">
           <div className="p-3 border-b border-slate-100">
@@ -155,7 +159,7 @@ export default function RolesPermissions() {
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-ink-900 flex items-center gap-1.5">
                     {r.is_system && <Lock size={12} className="text-slate-400" />}
-                    {r.name}
+                    {roleLabel(r.name)}
                   </span>
                   <Badge tone={SCOPE_TONE[r.scope_level] || "slate"}>{r.scope_level}</Badge>
                 </div>
@@ -168,12 +172,13 @@ export default function RolesPermissions() {
             ))}
           </div>
         </Card>
+      </aside>
 
         {/* Editor */}
         {!draft ? (
-          <EmptyState title="Select a role" hint="Pick a role to view and edit its permissions, or create a new one." />
+          <main className="policy-editor"><EmptyState title="Select a role" hint="Pick a role to inspect its data scope and capabilities, or create a new policy." /></main>
         ) : (
-          <Card className="p-6">
+          <main className="policy-editor"><div className="policy-editor-heading"><span>POLICY CONFIGURATION</span><p>Scope and permissions are applied together.</p></div><Card className="p-6">
             <div className="flex items-start justify-between gap-4 mb-5">
               <div className="min-w-0 flex-1">
                 {creating ? (
@@ -184,7 +189,7 @@ export default function RolesPermissions() {
                   </Field>
                 ) : (
                   <h2 className="font-display text-lg font-semibold text-ink-900 flex items-center gap-2">
-                    <Shield size={18} className="text-brand-500" /> {draft.name}
+                    <Shield size={18} className="text-brand-500" /> {roleLabel(draft.name)}
                     {draft.is_system && <Badge tone="slate">built-in</Badge>}
                   </h2>
                 )}
@@ -273,9 +278,9 @@ export default function RolesPermissions() {
                 <Save size={15} /> {busy ? "Saving…" : creating ? "Create role" : "Save changes"}
               </Button>
             </div>
-          </Card>
+          </Card></main>
         )}
-      </div>
-    </div>
+      </section>
+    </div></div>
   );
 }

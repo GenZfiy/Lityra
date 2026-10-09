@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Brain, Target, TrendingUp, Sparkles, AlertCircle, CalendarDays, Lightbulb, WandSparkles, Code2, Repeat } from "lucide-react";
@@ -48,7 +49,7 @@ export default function SkillMap({ candidateId }) {
     api.reviewQueue(id).then((r) => setDueReviews(r?.due_count || 0)).catch(() => {});
   }, [id]);
 
-  if (loading) return <Loading />;
+  if (loading) return <Loading label="Mapping your skills…" />;
 
   const o = data?.overall || { attempted: 0, correct: 0, mastery: 0 };
   const cats = data?.by_category || [];
@@ -62,7 +63,7 @@ export default function SkillMap({ candidateId }) {
   const noData = !data || o.attempted === 0;
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-skill-map"><div>
       <PageHeader
         title="My Skill Map"
         subtitle="Your evolving profile — built from every test you take and every problem you solve."
@@ -88,7 +89,7 @@ export default function SkillMap({ candidateId }) {
           </div>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="skill-intelligence-board" aria-label="Skill mastery and coaching">
           {/* Mastery hero */}
           <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-brand-500/[0.05] via-surface to-teal-500/[0.04] p-6 flex flex-col sm:flex-row items-center gap-6">
             <RadialGauge value={o.mastery} label="Mastery" color="#2563EB" size={132} />
@@ -222,7 +223,7 @@ export default function SkillMap({ candidateId }) {
           )}
         </div>
       )}
-    </div>
+    </div></div>
   );
 }
 

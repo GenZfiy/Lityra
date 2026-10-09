@@ -32,7 +32,9 @@ ROLES = [
     ("hod",           "Head of Department — leads one branch's academics.",           "branch"),
     ("tpo",           "Training & Placement Officer — placements for one college.",   "college"),
     ("college_admin", "College coordinator / administrator.",                         "college"),
-    ("trainer",       "Trainer / mentor (LMS).",                                      "section"),
+    ("training_center_admin", "Training center leader — manages one center, its programs and batches.", "college"),
+    ("program_manager", "Upskilling program manager — manages assigned programs and their batches.", "branch"),
+    ("trainer",       "Trainer / mentor — teaches assigned courses or training batches.", "section"),
     ("faculty",       "Faculty — teaches and assesses their assigned branch.",        "branch"),
     ("recruiter",     "Recruiter / interviewer (Drive).",                             "self"),
     ("student",       "Learner / candidate.",                                         "self"),
@@ -77,6 +79,15 @@ PERMISSIONS = [
     # self-service
     ("self.profile.manage",        "Manage own profile",                   "self"),
     ("self.progress.view",         "View own progress",                    "self"),
+    # training center operations
+    ("training.center.view",       "View assigned training centers",       "training"),
+    ("training.center.manage",     "Manage training center operations",   "training"),
+    ("training.program.view",      "View assigned upskilling programs",    "training"),
+    ("training.program.manage",    "Create and manage training programs", "training"),
+    ("training.batch.view",        "View assigned cohorts and batches",   "training"),
+    ("training.batch.manage",      "Create and manage training batches",  "training"),
+    ("training.participant.view",  "View learner and employee rosters",   "training"),
+    ("training.participant.manage","Enroll and manage participants",      "training"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -96,14 +107,22 @@ ROLE_DEFAULTS: dict[str, list[str]] = {
         "academic.course.manage", "academic.enrollment.manage", "lms.curriculum.manage",
         "assessment.manage", "assessment.grade", "assessment.result.publish",
         "drive.drive.manage", "drive.result.publish",
+        "training.center.view", "training.center.manage",
+        "training.program.view", "training.program.manage",
+        "training.batch.view", "training.batch.manage",
+        "training.participant.view", "training.participant.manage",
         "analytics.platform.view", *_ANALYTICS_DOWN,
     ],
     "principal": [
         "auth.user.view", "institution.view", "academic.course.view",
+        "training.center.view", "training.program.view", "training.batch.view",
+        "training.participant.view",
         *_ANALYTICS_DOWN,
     ],
     "dean": [
         "institution.view", "academic.course.manage", "academic.course.view",
+        "training.center.view", "training.program.view", "training.batch.view",
+        "training.participant.view",
         "analytics.college.view", "analytics.branch.view", "analytics.section.view",
         "analytics.student.view", "analytics.export",
     ],
@@ -112,6 +131,8 @@ ROLE_DEFAULTS: dict[str, list[str]] = {
         # their branch's analytics. Scope (branch) limits it to their department.
         "institution.view", "academic.course.manage", "academic.course.view",
         "assessment.manage", "assessment.grade",
+        "training.center.view", "training.program.view", "training.batch.view",
+        "training.participant.view",
         "analytics.branch.view", "analytics.section.view", "analytics.student.view",
         "analytics.export", "self.profile.manage",
     ],
@@ -123,17 +144,40 @@ ROLE_DEFAULTS: dict[str, list[str]] = {
     "college_admin": [
         "auth.user.view", "institution.view", "institution.access.manage",
         "academic.course.manage", "academic.enrollment.manage",
+        "training.center.view", "training.center.manage",
+        "training.program.view", "training.program.manage",
+        "training.batch.view", "training.batch.manage",
+        "training.participant.view", "training.participant.manage",
         *_ANALYTICS_DOWN,
+    ],
+    "training_center_admin": [
+        "auth.user.view", "training.center.view", "training.center.manage",
+        "training.program.view", "training.program.manage",
+        "training.batch.view", "training.batch.manage",
+        "training.participant.view", "training.participant.manage",
+        "analytics.college.view", "analytics.branch.view", "analytics.section.view",
+        "analytics.student.view", "analytics.export",
+    ],
+    "program_manager": [
+        "training.center.view", "training.program.view",
+        "training.batch.view", "training.batch.manage",
+        "training.participant.view", "training.participant.manage",
+        "analytics.branch.view", "analytics.section.view", "analytics.student.view",
+        "analytics.export",
     ],
     "trainer": [
         "lms.curriculum.manage", "academic.course.view",
         "assessment.manage", "assessment.grade",
+        "training.center.view", "training.program.view", "training.batch.view",
+        "training.participant.view",
         "analytics.section.view", "analytics.student.view",
         "self.profile.manage",
     ],
     "faculty": [
         "academic.course.manage", "academic.course.view",
         "assessment.manage", "assessment.grade",
+        "training.center.view", "training.program.view", "training.batch.view",
+        "training.participant.view",
         "analytics.branch.view", "analytics.section.view", "analytics.student.view",
         "self.profile.manage",
     ],
@@ -146,7 +190,7 @@ ROLE_DEFAULTS: dict[str, list[str]] = {
 }
 
 
-def seed(db, cfg: AuthConfig) -> None:
+def seed(db, cfg: AuthConfig, *, create_admin: bool = True) -> None:
     with db.session() as s:
         # --- permissions ---
         perm_map: dict[str, Permission] = {}
@@ -187,26 +231,27 @@ def seed(db, cfg: AuthConfig) -> None:
             if name in role_map:
                 grant(role_map[name], codes)
 
-        # --- initial super admin ---
-        admin_email = os.getenv("SEED_ADMIN_EMAIL", "admin@lareitcloudsolutions.com").lower()
-        admin_pw = os.getenv("SEED_ADMIN_PASSWORD", "ChangeMe#123")
-        admin = s.execute(select(User).where(User.email == admin_email)).scalar_one_or_none()
-        if not admin:
-            admin = User(
-                id=new_id(),
-                email=admin_email,
-                password_hash=hash_password(admin_pw, rounds=cfg.BCRYPT_ROUNDS),
-                full_name="LARE Super Admin",
-                status="active",
-                email_verified=True,
-                tenant_id=cfg.DEFAULT_TENANT_ID,
-            )
-            s.add(admin)
-            s.flush()
-            s.add(UserRole(id=new_id(), user_id=admin.id,
-                           role_id=role_map["super_admin"].id, college_id=None))
-            print(f"[seed] created super admin: {admin_email}")
-        else:
-            print(f"[seed] super admin already exists: {admin_email}")
+        if create_admin:
+            # --- optional initial super admin; init-db syncs the catalog only ---
+            admin_email = os.getenv("SEED_ADMIN_EMAIL", "admin@lareitcloudsolutions.com").lower()
+            admin_pw = os.getenv("SEED_ADMIN_PASSWORD", "ChangeMe#123")
+            admin = s.execute(select(User).where(User.email == admin_email)).scalar_one_or_none()
+            if not admin:
+                admin = User(
+                    id=new_id(),
+                    email=admin_email,
+                    password_hash=hash_password(admin_pw, rounds=cfg.BCRYPT_ROUNDS),
+                    full_name="LARE Super Admin",
+                    status="active",
+                    email_verified=True,
+                    tenant_id=cfg.DEFAULT_TENANT_ID,
+                )
+                s.add(admin)
+                s.flush()
+                s.add(UserRole(id=new_id(), user_id=admin.id,
+                               role_id=role_map["super_admin"].id, college_id=None))
+                print(f"[seed] created super admin: {admin_email}")
+            else:
+                print(f"[seed] super admin already exists: {admin_email}")
 
     print(f"[seed] RBAC ready — {len(PERMISSIONS)} permissions, {len(ROLES)} roles")

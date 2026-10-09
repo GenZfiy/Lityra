@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import secrets
+import calendar
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
@@ -12,7 +13,8 @@ from lare_common.security import new_id
 
 from .models import (
     AcademicYear, AccessCode, AccessSession, Assignment, Branch, Cohort, College,
-    ScheduleSlot, Semester,
+    ScheduleSlot, Semester, TrainingBatch, TrainingCenter, TrainingParticipant,
+    TrainingProgram,
 )
 
 # Access-session lifetime — the student must re-enter the Access ID after this.
@@ -34,6 +36,159 @@ def _d(v: str | None) -> date | None:
 
 
 class InstitutionService:
+    # ---------- training centers, programs, batches, and participants ----------
+    def create_training_center(self, s: Session, data, tenant_id: str) -> TrainingCenter:
+        code = data.code.strip().upper()
+        if s.execute(select(TrainingCenter).where(TrainingCenter.code == code)).scalar_one_or_none():
+            raise Conflict("Training center code already exists", code="training_center_code_exists")
+        center = TrainingCenter(id=new_id(), tenant_id=tenant_id, name=data.name.strip(),
+                                code=code, city=data.city, address=data.address,
+                                focus=data.focus)
+        s.add(center)
+        s.flush()
+        return center
+
+    def get_training_center(self, s: Session, center_id: str) -> TrainingCenter:
+        center = s.get(TrainingCenter, center_id)
+        if not center:
+            raise NotFound("Training center not found", code="training_center_not_found")
+        return center
+
+    def list_training_centers(self, s: Session, scope=None, tenant_id: str | None = None):
+        q = select(TrainingCenter)
+        if tenant_id:
+            q = q.where(TrainingCenter.tenant_id == tenant_id)
+        if scope is not None and not scope.unrestricted:
+            q = q.where(TrainingCenter.id.in_(scope.college_ids or []))
+        return list(s.execute(q.order_by(TrainingCenter.name)).scalars().all())
+
+    def create_training_program(self, s: Session, center_id: str, data) -> TrainingProgram:
+        self.get_training_center(s, center_id)
+        code = data.code.strip().upper()
+        if s.execute(select(TrainingProgram).where(
+            TrainingProgram.center_id == center_id, TrainingProgram.code == code
+        )).scalar_one_or_none():
+            raise Conflict("Program code already exists at this center", code="training_program_code_exists")
+        program = TrainingProgram(id=new_id(), center_id=center_id,
+                                  name=data.name.strip(), code=code,
+                                  summary=data.summary, duration_months=data.duration_months,
+                                  audience=data.audience, delivery_mode=data.delivery_mode)
+        s.add(program)
+        s.flush()
+        return program
+
+    def list_training_programs(self, s: Session, center_id: str):
+        self.get_training_center(s, center_id)
+        return list(s.execute(select(TrainingProgram).where(
+            TrainingProgram.center_id == center_id
+        ).order_by(TrainingProgram.created_at.desc())).scalars().all())
+
+    @staticmethod
+    def _add_months(start: date, months: int) -> date:
+        month_index = start.month - 1 + months
+        year = start.year + month_index // 12
+        month = month_index % 12 + 1
+        day = min(start.day, calendar.monthrange(year, month)[1])
+        return date(year, month, day)
+
+    def create_training_batch(self, s: Session, center_id: str, data) -> TrainingBatch:
+        self.get_training_center(s, center_id)
+        program = s.get(TrainingProgram, data.program_id)
+        if not program or program.center_id != center_id:
+            raise NotFound("Program not found at this training center", code="training_program_not_found")
+        code = data.code.strip().upper()
+        if s.execute(select(TrainingBatch).where(
+            TrainingBatch.center_id == center_id, TrainingBatch.code == code
+        )).scalar_one_or_none():
+            raise Conflict("Batch code already exists at this center", code="training_batch_code_exists")
+        if program.audience != "both" and program.audience != data.audience:
+            raise BadRequest("Batch audience must match its program", code="training_audience_mismatch")
+        if data.audience == "corporate" and not (data.organization_name or "").strip():
+            raise BadRequest("Corporate batches need a company name", code="organization_required")
+        batch = TrainingBatch(
+            id=new_id(), center_id=center_id, program_id=program.id,
+            name=data.name.strip(), code=code, starts_on=data.starts_on,
+            ends_on=self._add_months(data.starts_on, program.duration_months),
+            capacity=data.capacity, audience=data.audience,
+            organization_name=(data.organization_name or "").strip() or None,
+            trainer_user_id=data.trainer_user_id,
+        )
+        s.add(batch)
+        s.flush()
+        return batch
+
+    def list_training_batches(self, s: Session, center_id: str):
+        self.get_training_center(s, center_id)
+        return list(s.execute(select(TrainingBatch).where(
+            TrainingBatch.center_id == center_id
+        ).order_by(TrainingBatch.starts_on.desc())).scalars().all())
+
+    def add_training_participant(self, s: Session, batch_id: str, data) -> TrainingParticipant:
+        batch = s.get(TrainingBatch, batch_id)
+        if not batch:
+            raise NotFound("Training batch not found", code="training_batch_not_found")
+        if batch.status in ("completed", "cancelled"):
+            raise BadRequest("This batch is closed to new participants", code="training_batch_closed")
+        email = data.email.strip().lower()
+        if s.execute(select(TrainingParticipant).where(
+            TrainingParticipant.batch_id == batch_id,
+            TrainingParticipant.email == email,
+        )).scalar_one_or_none():
+            raise Conflict("This email is already enrolled in the batch", code="training_participant_exists")
+        count = s.execute(select(TrainingParticipant.id).where(
+            TrainingParticipant.batch_id == batch_id
+        )).all()
+        if len(count) >= batch.capacity:
+            raise Conflict("This batch has reached capacity", code="training_batch_full")
+        if batch.audience == "students" and data.participant_type != "student":
+            raise BadRequest("This batch is for students", code="training_audience_mismatch")
+        if batch.audience == "corporate" and data.participant_type != "corporate_employee":
+            raise BadRequest("This batch is for corporate employees", code="training_audience_mismatch")
+        participant = TrainingParticipant(
+            id=new_id(), batch_id=batch_id, full_name=data.full_name.strip(),
+            email=email, participant_type=data.participant_type,
+            organization_name=(data.organization_name or batch.organization_name or "").strip() or None,
+        )
+        s.add(participant)
+        s.flush()
+        return participant
+
+    def list_training_participants(self, s: Session, batch_id: str):
+        if not s.get(TrainingBatch, batch_id):
+            raise NotFound("Training batch not found", code="training_batch_not_found")
+        return list(s.execute(select(TrainingParticipant).where(
+            TrainingParticipant.batch_id == batch_id
+        ).order_by(TrainingParticipant.full_name)).scalars().all())
+
+    @staticmethod
+    def training_center_out(center: TrainingCenter) -> dict:
+        return {"id": center.id, "name": center.name, "code": center.code,
+                "city": center.city, "address": center.address, "focus": center.focus,
+                "status": center.status, "created_at": center.created_at.isoformat()}
+
+    @staticmethod
+    def training_program_out(program: TrainingProgram) -> dict:
+        return {"id": program.id, "center_id": program.center_id, "name": program.name,
+                "code": program.code, "summary": program.summary,
+                "duration_months": program.duration_months, "audience": program.audience,
+                "delivery_mode": program.delivery_mode, "status": program.status}
+
+    @staticmethod
+    def training_batch_out(batch: TrainingBatch, enrolled_count: int = 0) -> dict:
+        return {"id": batch.id, "center_id": batch.center_id, "program_id": batch.program_id,
+                "name": batch.name, "code": batch.code,
+                "starts_on": batch.starts_on.isoformat(), "ends_on": batch.ends_on.isoformat(),
+                "capacity": batch.capacity, "enrolled_count": enrolled_count,
+                "audience": batch.audience, "organization_name": batch.organization_name,
+                "trainer_user_id": batch.trainer_user_id, "status": batch.status}
+
+    @staticmethod
+    def training_participant_out(person: TrainingParticipant) -> dict:
+        return {"id": person.id, "batch_id": person.batch_id, "full_name": person.full_name,
+                "email": person.email, "participant_type": person.participant_type,
+                "organization_name": person.organization_name, "status": person.status,
+                "enrolled_at": person.enrolled_at.isoformat()}
+
     # ---------- colleges ----------
     def create_college(self, s: Session, data) -> College:
         c = College(

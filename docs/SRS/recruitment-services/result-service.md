@@ -5,7 +5,7 @@
 ---
 
 ## 1. Purpose
-Produce and publish final drive results — rank, pass/fail, shortlist — and generate offer letters / PPO letters for selected candidates. Consolidates evaluation scores and interview decisions into a final outcome per candidate, supports report exports (Excel/PDF/CSV), and administers the Pre-Placement Offer conversion for the Lare Consulting and Technologies Pvt. Ltd. pipeline.
+Produce and publish final drive results — rank, pass/fail, shortlist — and generate offer letters / PPO letters for selected candidates. Consolidates evaluation scores and interview decisions into a final outcome per candidate, supports report exports (Excel/PDF/CSV), and administers the Pre-Placement Offer conversion for the GenZify pipeline.
 
 ## 2. Responsibilities
 - Compile final results per drive/round from Evaluation + Interview outcomes.

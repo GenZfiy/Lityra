@@ -1,4 +1,4 @@
-// Thin fetch client for the LARE API. Talks to /api (dev-proxied to the Gateway
+// Thin fetch client for the Lityra API. Talks to /api (dev-proxied to the Gateway
 // at :8000, which routes onward to every service). Handles the
 // { data, meta, errors } envelope and JWT tokens.
 
@@ -274,10 +274,10 @@ export const api = {
   shortlist: (id, candidate_ids) => request(`/drive/v1/drives/${id}/shortlist`, { method: "POST", body: { candidate_ids } }),
   advance: (id, candidate_id) => request(`/drive/v1/drives/${id}/advance`, { method: "POST", body: { candidate_id } }),
   funnel: (id) => request(`/drive/v1/drives/${id}/funnel`),
-  // LARE Hire — a candidate's verified skill tags from real drive-exam performance.
+  // Lityra Hire — a candidate's verified skill tags from real drive-exam performance.
   candidateSkills: (candidateId) => request(`/drive/v1/evaluations/twin/${candidateId}`),
-  // Cognitive Twin v0.1 (LARE Learn) — a learner's skill profile from their LMS
-  // assessment history. Separate from LARE Hire's evaluation data.
+  // Cognitive Twin v0.1 (Lityra Learn) — a learner's skill profile from their LMS
+  // assessment history. Separate from Lityra Hire's evaluation data.
   skillTwin: (learnerId) => request(`/lms/v1/assessments/twin/${learnerId}`),
   // AI Coach — the learner's persistent study plan. force=true regenerates it.
   skillCoach: (learnerId, force = false) =>
@@ -287,7 +287,7 @@ export const api = {
     request(`/lms/v1/assessments/coach/${learnerId}/progress`, { method: "POST", body: { day, done } }),
   // Nudge: send the learner their weakest area + plan via in-app + email.
   nudgePlan: (learnerId) => request(`/lms/v1/assessments/nudge/${learnerId}`, { method: "POST" }),
-  // LARE Learn — coding practice bank (feeds the Skill Map). Same sandbox as
+  // Lityra Learn — coding practice bank (feeds the Skill Map). Same sandbox as
   // Drive coding rounds, but a student-facing practice surface.
   practiceProblems: (params = "") => request(`/lms/v1/practice/problems${params}`),
   practiceOpen: (problem_id, language) =>
@@ -301,30 +301,30 @@ export const api = {
   vivaStart: (sid) => request(`/lms/v1/practice/${sid}/viva`, { method: "POST" }),
   vivaGrade: (vivaId, answer) =>
     request(`/lms/v1/practice/viva/${vivaId}`, { method: "POST", body: { answer } }),
-  // LARE Learn — Skills-to-Opportunity: career-role readiness from the LMS twin.
+  // Lityra Learn — Skills-to-Opportunity: career-role readiness from the LMS twin.
   careerReadiness: (learnerId) => request(`/lms/v1/careers/readiness/${learnerId}`),
   listCareers: () => request("/lms/v1/careers"),
   createCareer: (body) => request("/lms/v1/careers", { method: "POST", body }),
   deleteCareer: (cid) => request(`/lms/v1/careers/${cid}`, { method: "DELETE" }),
-  // LARE Hire — Skills-to-Opportunity: open drives matched to a candidate's skills.
+  // Lityra Hire — Skills-to-Opportunity: open drives matched to a candidate's skills.
   matchedOpportunities: (candidateId) =>
     request(`/drive/v1/opportunities${candidateId ? `?candidate_id=${candidateId}` : ""}`),
-  // LARE Learn — Lifelong Reinforcement: forgetting-aware spaced review queue.
+  // Lityra Learn — Lifelong Reinforcement: forgetting-aware spaced review queue.
   reviewQueue: (learnerId) => request(`/lms/v1/reviews/${learnerId}`),
   submitReview: (learnerId, skill, outcome) =>
     request(`/lms/v1/reviews/${learnerId}/review`, { method: "POST", body: { skill, outcome } }),
-  // LARE Learn — Embodied Practice Worlds: browser workplace simulations.
+  // Lityra Learn — Embodied Practice Worlds: browser workplace simulations.
   listWorlds: () => request("/lms/v1/worlds"),
   startWorld: (worldId) => request(`/lms/v1/worlds/${worldId}/start`, { method: "POST" }),
   answerWorld: (runId, step_id, choice) =>
     request(`/lms/v1/worlds/runs/${runId}/answer`, { method: "POST", body: { step_id, choice } }),
-  // LARE Learn — Generative Learning Fabric: on-demand AI micro-lessons.
+  // Lityra Learn — Generative Learning Fabric: on-demand AI micro-lessons.
   generateLesson: (learnerId, topic, force = false) =>
     request(`/lms/v1/micro-lessons/${learnerId}/generate`, { method: "POST", body: { topic, force } }),
   listLessons: (learnerId) => request(`/lms/v1/micro-lessons/${learnerId}`),
   // Author-facing: AI-generate lesson blocks to review + save into a curriculum lesson.
   authorBlocks: (topic) => request("/lms/v1/micro-lessons/author-blocks", { method: "POST", body: { topic } }),
-  // LARE Learn — Human Knowledge Mesh: AI-matched peer teach-back.
+  // Lityra Learn — Human Knowledge Mesh: AI-matched peer teach-back.
   meshOverview: (learnerId) => request(`/lms/v1/mesh/${learnerId}`),
   meshSessions: (learnerId) => request(`/lms/v1/mesh/${learnerId}/sessions`),
   meshRequest: (topic, mentor_id, note) =>
@@ -332,12 +332,12 @@ export const api = {
   meshRespond: (sessionId, accept) =>
     request(`/lms/v1/mesh/${sessionId}/respond`, { method: "POST", body: { accept } }),
   meshComplete: (sessionId) => request(`/lms/v1/mesh/${sessionId}/complete`, { method: "POST" }),
-  // LARE Learn — Flow layer: adaptive drill that tunes difficulty in real time.
+  // Lityra Learn — Flow layer: adaptive drill that tunes difficulty in real time.
   drillStart: (topic, target) =>
     request("/lms/v1/drill/start", { method: "POST", body: { topic: topic || null, target: target || 8 } }),
   drillAnswer: (drillId, item_id, option, elapsed_ms) =>
     request(`/lms/v1/drill/${drillId}/answer`, { method: "POST", body: { item_id, option, elapsed_ms } }),
-  // LARE Learn — Sovereign Learning Wallet: signed, verifiable competence record.
+  // Lityra Learn — Sovereign Learning Wallet: signed, verifiable competence record.
   getWallet: (learnerId) => request(`/lms/v1/wallet/${learnerId}`),
   issueWallet: (learnerId) => request(`/lms/v1/wallet/${learnerId}/issue`, { method: "POST" }),
   revokeWallet: (learnerId) => request(`/lms/v1/wallet/${learnerId}/revoke`, { method: "POST" }),
@@ -348,7 +348,7 @@ export const api = {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "lare-wallet.pdf";
+    a.href = url; a.download = "lityra-wallet.pdf";
     document.body.appendChild(a); a.click();
     a.remove(); URL.revokeObjectURL(url);
   },
@@ -433,11 +433,11 @@ export const api = {
   // ---- Proctoring (browser hooks) ----
   proctorStart: (body) => request("/drive/v1/proctor/start", { method: "POST", body }),
   proctorEvent: (examSessionId, type, meta) => request(`/drive/v1/proctor/${examSessionId}/events`, { method: "POST", body: { type, meta } }),
-  // Public "Attend Drive" registration (no login). Returns { student_id, drive,
-  // access_token, refresh_token, ... }.
+  // Public registration creates a pending candidate and sends an email OTP.
   attendDrive: (body) => request("/drive/v1/attend", { method: "POST", auth: false, body }),
-  attendResume: (student_id) =>
-    request("/drive/v1/attend/resume", { method: "POST", auth: false, body: { student_id } }),
+  attendResume: (student_id, email) =>
+    request("/drive/v1/attend/resume", { method: "POST", auth: false, body: { student_id, email } }),
+  attendComplete: () => request("/drive/v1/attend/complete", { method: "POST" }),
   apply: (drive_id, drive_role_id) =>
     request("/drive/v1/candidate/apply", { method: "POST", body: { drive_id, drive_role_id } }),
   myApplications: () => request("/drive/v1/candidate/applications"),
@@ -476,6 +476,14 @@ export const api = {
   createCollege: (body) => request("/lms/v1/colleges", { method: "POST", body }),
   collegeCohorts: (cid) => request(`/lms/v1/colleges/${cid}/cohorts`),
   collegeBranches: (cid) => request(`/lms/v1/colleges/${cid}/branches`),
+  trainingCenters: () => request("/lms/v1/training-centers"),
+  createTrainingCenter: (body) => request("/lms/v1/training-centers", { method: "POST", body }),
+  trainingPrograms: (centerId) => request(`/lms/v1/training-centers/${centerId}/programs`),
+  createTrainingProgram: (centerId, body) => request(`/lms/v1/training-centers/${centerId}/programs`, { method: "POST", body }),
+  trainingBatches: (centerId) => request(`/lms/v1/training-centers/${centerId}/batches`),
+  createTrainingBatch: (centerId, body) => request(`/lms/v1/training-centers/${centerId}/batches`, { method: "POST", body }),
+  trainingParticipants: (batchId) => request(`/lms/v1/training-batches/${batchId}/participants`),
+  addTrainingParticipant: (batchId, body) => request(`/lms/v1/training-batches/${batchId}/participants`, { method: "POST", body }),
   createCohort: (cid, body) => request(`/lms/v1/colleges/${cid}/cohorts`, { method: "POST", body }),
 
   // ---- Audit trail (Super Admin) ----

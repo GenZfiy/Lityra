@@ -34,7 +34,7 @@ role_permissions = Table(
 
 class User(Base):
     __tablename__ = "users"
-    # LARE Learn and LARE Hire are separate products with separate accounts: the
+    # Lityra Learn and Lityra Hire are separate products with separate accounts: the
     # same email may exist once per product, each with its own password. Identity
     # is therefore unique on (email, product), not email alone.
     __table_args__ = (UniqueConstraint("email", "product", name="uq_users_email_product"),)

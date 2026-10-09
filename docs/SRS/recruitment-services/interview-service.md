@@ -5,7 +5,7 @@
 ---
 
 ## 1. Purpose
-Manage the human rounds of a drive: scheduling interviews, allocating panels/interviewers, capturing ratings and remarks, and recording selection decisions. Supports technical, HR, and PPO-selection rounds (internal technical + HR rounds conducted by Lare Consulting and Technologies Pvt. Ltd.), and feeds decisions into Result and the skill scorecard (communication dimension).
+Manage the human rounds of a drive: scheduling interviews, allocating panels/interviewers, capturing ratings and remarks, and recording selection decisions. Supports technical, HR, and PPO-selection rounds (internal technical + HR rounds conducted by GenZify), and feeds decisions into Result and the skill scorecard (communication dimension).
 
 ## 2. Responsibilities
 - Schedule interviews (slots, mode: in-person/online link, duration).

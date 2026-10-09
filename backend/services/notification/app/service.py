@@ -34,13 +34,11 @@ def _render(text: str | None, variables: dict) -> str | None:
         return text  # malformed template — fail safe
 
 
-# Company signature appended to every platform (LARE-branded) email.
+# Company signature appended to platform emails.
 SIGNATURE = (
     "\n\nWarm regards,\n"
-    "Human Resources and Marketing Department\n"
-    "Lare Consulting and Technology PVT. ltd\n"
-    "web.lareitcloudsolution.com\n"
-    "info.market@lareitcloudsolutions.com"
+    "GenZify\n"
+    "Engineering Human Potential Through Technology"
 )
 
 # Security emails the Auth service relies on. Without these rows, /notify/v1/send
@@ -48,35 +46,35 @@ SIGNATURE = (
 # never go out. `critical=True` so they ignore channel opt-outs. Merge vars come
 # from Auth's _deliver(): {email, code, token}.
 DEFAULT_EMAIL_TEMPLATES = [
-    ("password_reset", "Reset your LARE account password",
+    ("password_reset", "Reset your Lityra account password",
      "Dear User,\n\n"
-     "We received a request to reset the password for your LARE account. "
+     "We received a request to reset the password for your Lityra account. "
      "Please use the secure code below to continue:\n\n"
      "    {token}\n\n"
      "Enter this code on the password reset page to set a new password. For your "
      "security, the code expires in 30 minutes and can be used only once.\n\n"
      "If you did not request a password reset, no action is required — you can "
      "safely ignore this email and your password will remain unchanged." + SIGNATURE),
-    ("otp", "Your LARE one-time sign-in code",
+    ("otp", "Your Lityra one-time sign-in code",
      "Dear User,\n\n"
-     "Use the one-time code below to sign in to your LARE account:\n\n"
+     "Use the one-time code below to sign in to your Lityra account:\n\n"
      "    {code}\n\n"
      "This code expires in 10 minutes and can be used only once. For your "
-     "security, please do not share it with anyone — LARE will never ask you for "
+     "security, please do not share it with anyone — Lityra will never ask you for "
      "this code.\n\n"
      "If you did not attempt to sign in, you can safely ignore this email." + SIGNATURE),
-    ("email_verify", "Verify your LARE email address",
+    ("email_verify", "Verify your Lityra email address",
      "Dear User,\n\n"
-     "Welcome to LARE. Please confirm your email address using the secure code "
+     "Welcome to Lityra. Please confirm your email address using the secure code "
      "below:\n\n"
      "    {token}\n\n"
      "Entering this code verifies your email and activates your account.\n\n"
-     "If you did not create a LARE account, you can safely ignore this email." + SIGNATURE),
+     "If you did not create a Lityra account, you can safely ignore this email." + SIGNATURE),
     # Interview scheduling — sent to the candidate with their joining details.
     # Vars from Interview's schedule flow: {name, stage, mode, slot, link, company}.
     ("interview_scheduled", "Congratulations! Your interview is scheduled",
      "Dear {name},\n\n"
-     "Greetings from LARE!\n\n"
+     "Greetings from Lityra!\n\n"
      "Congratulations on being shortlisted for the {stage} interview. We are "
      "pleased to confirm your interview and look forward to interacting with you.\n\n"
      "Your interview details:\n\n"
@@ -94,7 +92,7 @@ DEFAULT_EMAIL_TEMPLATES = [
     # Vars: {name, candidate, stage, mode, slot, link}.
     ("interview_assigned", "Interview assignment",
      "Dear {name},\n\n"
-     "Greetings from LARE!\n\n"
+     "Greetings from Lityra!\n\n"
      "You have been assigned to conduct the following interview. Thank you for "
      "taking the time to support our recruitment process.\n\n"
      "Interview details:\n\n"

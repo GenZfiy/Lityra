@@ -1,3 +1,4 @@
+import "../../styles/institution-operations-pages.css";
 import { useEffect, useState } from "react";
 import {
   ChevronRight, Home, Building2, GitBranch, Users, GraduationCap,
@@ -61,7 +62,7 @@ export default function PlacementAnalytics() {
   const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 
   return (
-    <div>
+    <div className="page-composition page-composition-institution institution-ops institution-ops-placement"><div>
       <PageHeader title="Placement Readiness"
         subtitle="Who's eligible and placement-ready across your scope — drill from the platform to a single student." />
 
@@ -82,7 +83,9 @@ export default function PlacementAnalytics() {
       {loading || !node ? <Loading /> : node.learners === 0 ? (
         <EmptyState title="No learners in scope" hint="Nothing to report for this unit." />
       ) : (
-        <div className="space-y-5">
+        <div className="placement-report">
+          <section className="placement-outcome" aria-label="Placement outcomes">
+            <div className="placement-outcome-heading"><span>CAREER OUTCOMES</span><h2>{cur.label}</h2><p>Readiness and eligibility for the current reporting scope.</p></div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Kpi icon={Users} tone="brand" label="Learners" value={node.learners.toLocaleString()} />
             <Kpi icon={CheckCircle2} tone="teal" label="Eligible (CGPA ≥ 6)"
@@ -91,12 +94,14 @@ export default function PlacementAnalytics() {
               value={`${pct(node.ready, node.learners)}%`} foot={`${node.ready.toLocaleString()} students`} bar={pct(node.ready, node.learners)} barTone="#f59e0b" />
             <Kpi icon={TrendingUp} tone="violet" label="Avg readiness" value={`${node.avg_readiness}%`} bar={node.avg_readiness} barTone="#7c3aed" />
           </div>
+          </section>
 
-          <div className="grid lg:grid-cols-[1fr_1.3fr] gap-4">
-            <Card className="p-5">
+          <section className="placement-evidence" aria-label="Readiness evidence by skill and unit">
+            <Card className="placement-skill-profile p-5">
               <h3 className="text-sm font-semibold text-ink-900 flex items-center gap-2 mb-4">
                 <Target size={15} className="text-amber-500" /> Readiness by area
               </h3>
+              <p className="placement-evidence-note">Category scores reported for the selected scope</p>
               <div className="space-y-3.5">
                 {Object.entries(node.categories).map(([k, v]) => (
                   <MasteryBar key={k} label={CAT_LABEL[k] || k} pct={v} small />
@@ -104,13 +109,13 @@ export default function PlacementAnalytics() {
               </div>
             </Card>
 
-            {node.child_level === "student"
+            <div className="placement-unit-ranking">{node.child_level === "student"
               ? <StudentTable students={node.children} />
-              : <UnitComparison node={node} childLabel={childLabel} onDrill={drill} />}
-          </div>
+              : <UnitComparison node={node} childLabel={childLabel} onDrill={drill} />}</div>
+          </section>
         </div>
       )}
-    </div>
+    </div></div>
   );
 }
 

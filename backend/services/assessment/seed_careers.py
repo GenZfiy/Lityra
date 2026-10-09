@@ -1,4 +1,4 @@
-"""Seed the LARE Learn career-role catalog for the Skills-to-Opportunity map.
+"""Seed the Lityra Learn career-role catalog for the Skills-to-Opportunity map.
 Skill names should line up with your assessment objectives / practice skills
 (e.g. Arrays, Strings, SQL, DP, Recursion) and coding languages (Python, ...),
 so a learner's twin can be matched against them.
@@ -83,7 +83,7 @@ def main():
         s.flush()
     print("Career catalog seeded: {} created, {} updated ({} roles).".format(
         created, updated, len(CAREERS)))
-    print("Learners see readiness in LARE Learn -> Career Readiness.")
+    print("Learners see readiness in Lityra Learn -> Career Readiness.")
 
 
 if __name__ == "__main__":

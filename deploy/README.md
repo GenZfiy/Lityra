@@ -1,22 +1,22 @@
-# LARE — AWS Production Deployment Runbook
+# Lityra — AWS Production Deployment Runbook
 
-This is the LARE-specific version of the CEO's generic AWS guide. It deploys the
-**real** platform: the API **gateway + 26 Flask microservices**, the **React/Vite
+This is the Lityra-specific version of the CEO's generic AWS guide. It deploys the
+**real** platform: the API **gateway + 31 Flask microservices**, the **React/Vite
 SPA**, **Redis**, and **Amazon RDS PostgreSQL** (schema-per-service) — two products
 (LMS + Drive) from one codebase.
 
-> **Why one container, not 26?** The gateway's upstream URLs *and* the internal
-> event bus both default to `127.0.0.1:800x`. Running all 27 processes in a single
+> **Why one container, not 31?** The gateway's upstream URLs *and* the internal
+> event bus both default to `127.0.0.1:800x`. Running all 32 processes in a single
 > network namespace (one image, supervisord) means **zero URL rewiring** — it
 > behaves exactly like `run-all.ps1`. This is the smallest, safest leap from the
-> working local setup. Splitting into 26 containers/Fargate tasks later requires
+> working local setup. Splitting into 31 containers/Fargate tasks later requires
 > setting every `*_URL` env var and moving the event bus to SNS/SQS first.
 
 ## What's in this folder
 
 | File | Purpose |
 |------|---------|
-| `Dockerfile` | Backend image — gateway + 26 services under supervisord |
+| `Dockerfile` | Backend image — gateway + 31 services under supervisord |
 | `entrypoint.sh` | Reads `services.txt`, runs `init-db` per schema, generates the supervisord config |
 | `requirements-all.txt` | Consolidated Python deps for the backend image |
 | `web.Dockerfile` | Builds the React SPA and serves it + `/api` proxy via nginx |
@@ -26,7 +26,7 @@ SPA**, **Redis**, and **Amazon RDS PostgreSQL** (schema-per-service) — two pro
 
 ---
 
-## Architecture (LARE, corrected)
+## Architecture (Lityra, corrected)
 
 ```
 Students / Recruiters
@@ -41,12 +41,12 @@ Students / Recruiters
    │  web (nginx)  →  SPA static + /api proxy   │
    │        │                                   │
    │  backend  ── gateway :8000                 │
-   │        └── 26 services :8001–8026          │
+   │        └── 31 services :8001–8031          │
    │  redis  (event bus + rate limit)           │
    └───────────────┬───────────────┬───────────┘
                    │               │
         Amazon RDS PostgreSQL   Amazon S3   Amazon SES / Zoho
-        (26 schemas, 1 db)      (uploads)   (email)
+        (31 schemas, 1 db)      (uploads)   (email)
 ```
 
 ---
@@ -60,13 +60,13 @@ Buy in Route 53 (simplest — hosted zone is automatic) or point existing DNS to
 
 ## Phase 3 — RDS PostgreSQL (do this before the server)
 1. RDS → Create database → **PostgreSQL**, engine default version.
-2. Size: start **db.t4g.small** (not `micro`). *Why:* 27 processes each open a small
-   pool. With `DB_POOL_SIZE=2 + DB_MAX_OVERFLOW=3` that's up to `27 × 5 ≈ 135`
+2. Size: start **db.t4g.small** (not `micro`). *Why:* 32 processes each open a small
+   pool. With `DB_POOL_SIZE=2 + DB_MAX_OVERFLOW=3` that's up to `32 × 5 = 160`
    connections; `t4g.micro`'s `max_connections` (~80–110) is too low and will throw
    *"remaining connection slots reserved"* — the exact error hit on the Supabase pooler.
    `t4g.small` gives ~170+. Scale up for heavy drive days, down after.
 3. One database (e.g. `lms`), one master user. **Schema-per-service is created
-   automatically** by `entrypoint.sh` (`init-db` per service) — do **not** make 26 databases.
+   automatically** by `entrypoint.sh` (`init-db` per service) — do **not** make 31 databases.
 4. Security group: allow inbound **5432 from the EC2's security group only** (not public).
 5. Enable automated backups (7–30 day retention) → covers the CEO's Phase 16.
 
@@ -114,7 +114,7 @@ curl -s http://localhost/healthz                              # nginx edge
 docker compose -f deploy/docker-compose.yml exec backend \
   curl -s http://127.0.0.1:8000/health                        # gateway (whole stack)
 docker compose -f deploy/docker-compose.yml exec backend \
-  supervisorctl status                                        # all 27 processes RUNNING
+  supervisorctl status                                        # all 32 processes RUNNING
 ```
 This one command replaces the CEO guide's Phases 6–8, 14, 15 (nginx, python env, deploy,
 systemd) — Docker + supervisord handle process supervision and restarts.
@@ -161,7 +161,7 @@ All commands run from the repo root (`-f deploy/docker-compose.yml`); export
 # Update to latest code (rebuilds only what changed)
 git pull && docker compose -f deploy/docker-compose.yml up -d --build
 
-# Restart one service without touching the other 26
+# Restart one service without touching the other 30
 docker compose -f deploy/docker-compose.yml exec backend supervisorctl restart exam
 
 # Tail a single service's logs
@@ -181,10 +181,10 @@ docker compose -f deploy/docker-compose.yml up -d --force-recreate backend
   refactor, not a config change. Not required for launch.
 
 ## What differs from the CEO's generic guide
-| CEO guide | LARE reality |
+| CEO guide | Lityra reality |
 |-----------|--------------|
 | FastAPI, `uvicorn main:app` | Flask via waitress, `manage.py serve` |
-| One app on :8000 | Gateway :8000 + 26 services :8001–8026 (supervisord) |
+| One app on :8000 | Gateway :8000 + 31 services :8001–8031 (supervisord) |
 | Nginx → one app | Nginx serves SPA + proxies `/api` → gateway |
 | (no frontend step) | React/Vite build in `web.Dockerfile` |
 | (no Redis) | Redis for event bus, rate limit, sessions |

@@ -73,7 +73,7 @@ class BrevoEmail:
     def __init__(self):
         self.api_key = os.getenv("BREVO_API_KEY", "")
         self.sender = os.getenv("BREVO_FROM", "no-reply@lareitcloud.com")
-        self.sender_name = os.getenv("BREVO_FROM_NAME", "LARE Platform")
+        self.sender_name = os.getenv("BREVO_FROM_NAME", "Lityra")
 
     def send(self, *, to: str | None, subject: str | None, body: str | None,
              from_name: str | None = None, reply_to: str | None = None) -> str:

@@ -20,8 +20,8 @@ param(
   [string[]]$Only,
   [string]$DatabaseUrl = "",
   [string]$RedisUrl = "",
-  [string]$JwtSecret = "dev-insecure-change-me",
-  [string]$InternalSecret = "dev-internal-secret-change-me"
+  [string]$JwtSecret = "change-me-please-set-JWT_SECRET",
+  [string]$InternalSecret = "change-me-please-set-INTERNAL_JWT_SECRET"
 )
 
 $ErrorActionPreference = "Stop"
@@ -49,8 +49,8 @@ if (Test-Path $envFile) {
 
 # Shared environment for every child process. CLI params override .env only when
 # the caller passed a non-default value.
-if ($JwtSecret -ne "dev-insecure-change-me" -or -not $env:JWT_SECRET) { $env:JWT_SECRET = $JwtSecret }
-if ($InternalSecret -ne "dev-internal-secret-change-me" -or -not $env:INTERNAL_JWT_SECRET) { $env:INTERNAL_JWT_SECRET = $InternalSecret }
+if ($JwtSecret -ne "change-me-please-set-JWT_SECRET" -or -not $env:JWT_SECRET) { $env:JWT_SECRET = $JwtSecret }
+if ($InternalSecret -ne "change-me-please-set-INTERNAL_JWT_SECRET" -or -not $env:INTERNAL_JWT_SECRET) { $env:INTERNAL_JWT_SECRET = $InternalSecret }
 if (-not $env:APP_ENV) { $env:APP_ENV = "development" }
 if ($RedisUrl) { $env:REDIS_URL = $RedisUrl }
 if ($env:REDIS_URL) { $env:EVENT_BUS_BACKEND = "auto" } elseif (-not $env:EVENT_BUS_BACKEND) { $env:EVENT_BUS_BACKEND = "http" }
@@ -77,7 +77,7 @@ if ($Only) {
   $services = $services | Where-Object { $onlySet -contains $_.Name }
 }
 
-$pids = @{}
+$launchPlan = @()
 foreach ($svc in $services) {
   $svcDir = Join-Path $root "services\$($svc.Dir)"
   if (-not (Test-Path (Join-Path $svcDir "manage.py"))) {
@@ -101,11 +101,86 @@ foreach ($svc in $services) {
   $env:PORT = "$($svc.Port)"
   $env:SERVICE_NAME = $svc.Name
 
-  if (-not $SkipInit) {
-    & $py (Join-Path $svcDir "manage.py") init-db 2>&1 | Out-Null
+  $log = Join-Path $runDir "$($svc.Name).log"
+  $launchPlan += [pscustomobject]@{ Service=$svc; Dir=$svcDir; Python=$py; Log=$log }
+}
+
+# Initialize every requested service before starting any servers. If a schema
+# setup fails, this avoids leaving a partially running backend behind.
+if (-not $SkipInit) {
+  $oldNativePreference = $null
+  $hasNativePreference = Test-Path Variable:PSNativeCommandUseErrorActionPreference
+  if ($hasNativePreference) {
+    $oldNativePreference = $PSNativeCommandUseErrorActionPreference
+    $PSNativeCommandUseErrorActionPreference = $false
+  }
+  try {
+    foreach ($item in $launchPlan) {
+      $svc = $item.Service
+      if ($DatabaseUrl) {
+        $sch = $svc.Name.Replace("-", "_")
+        if (@("auth","storage","realtime","graphql","vault","cron","net","extensions") -contains $sch) { $sch = "lare_$sch" }
+        $env:DATABASE_URL = $DatabaseUrl; $env:DB_SCHEMA = $sch
+      }
+      else { $env:DATABASE_URL = "sqlite:///$($svc.Dir).sqlite3"; $env:DB_SCHEMA = "" }
+      $env:PORT = "$($svc.Port)"
+      $env:SERVICE_NAME = $svc.Name
+
+      # The gateway is stateless and its CLI intentionally has no init-db command.
+      if ($svc.Name -eq "gateway") { continue }
+
+      # Start Python with file redirection instead of invoking it through the
+      # PowerShell pipeline. In Windows PowerShell, native stderr plus
+      # $ErrorActionPreference = Stop can abort here before we report the
+      # service name and the captured traceback.
+      $initStdout = Join-Path $runDir "$($svc.Name).init.stdout.log"
+      $initStderr = Join-Path $runDir "$($svc.Name).init.stderr.log"
+      $manageArg = '"' + (Join-Path $item.Dir "manage.py") + '"'
+      $initProc = Start-Process -FilePath $item.Python `
+        -ArgumentList @($manageArg, "init-db") `
+        -WorkingDirectory $item.Dir -PassThru -Wait -NoNewWindow `
+        -RedirectStandardOutput $initStdout -RedirectStandardError $initStderr
+      $initExitCode = $initProc.ExitCode
+      if ($initExitCode -ne 0) {
+        $initOutput = @()
+        if (Test-Path $initStdout) { $initOutput += Get-Content $initStdout }
+        if (Test-Path $initStderr) { $initOutput += Get-Content $initStderr }
+        $safeOutput = ($initOutput | ForEach-Object {
+          if ($DatabaseUrl) { "$($_)" -replace [regex]::Escape($DatabaseUrl), "<DATABASE_URL_REDACTED>" }
+          else { "$($_)" }
+        } | Select-Object -Last 20) -join "`n"
+        throw "init-db failed for '$($svc.Name)' (exit $initExitCode).`n$safeOutput"
+      }
+    }
+  }
+  finally {
+    if ($hasNativePreference) { $PSNativeCommandUseErrorActionPreference = $oldNativePreference }
+  }
+}
+
+$pids = @{}
+foreach ($item in $launchPlan) {
+  $svc = $item.Service
+  $svcDir = $item.Dir
+  $py = $item.Python
+  $log = $item.Log
+  if ($DatabaseUrl) {
+    $sch = $svc.Name.Replace("-", "_")
+    if (@("auth","storage","realtime","graphql","vault","cron","net","extensions") -contains $sch) { $sch = "lare_$sch" }
+    $env:DATABASE_URL = $DatabaseUrl; $env:DB_SCHEMA = $sch
+  }
+  else { $env:DATABASE_URL = "sqlite:///$($svc.Dir).sqlite3"; $env:DB_SCHEMA = "" }
+  $env:PORT = "$($svc.Port)"
+  $env:SERVICE_NAME = $svc.Name
+  if ($svc.Name -eq "coding" -and $env:APP_ENV -eq "production" -and $env:EXEC_MODE -eq "subprocess") {
+    # Never permit unsandboxed execution in production. On local Windows, where
+    # nsjail/bubblewrap are unavailable, keep the API available with execution
+    # disabled rather than weakening the executor's production guard.
+    $env:EXEC_ENABLED = "false"
+    Write-Warning "coding: code execution disabled (production requires a sandbox; this host is configured for subprocess mode)."
   }
 
-  $log = Join-Path $runDir "$($svc.Name).log"
+  try {
   # Quote the manage.py path — it can contain spaces (e.g. "C:\Users\S Sameer\...").
   $manageArg = '"' + (Join-Path $svcDir "manage.py") + '"'
   $proc = Start-Process -FilePath $py `
@@ -113,9 +188,18 @@ foreach ($svc in $services) {
     -WorkingDirectory $svcDir -PassThru -WindowStyle Hidden `
     -RedirectStandardOutput $log -RedirectStandardError "$log.err"
   $pids[$svc.Name] = $proc.Id
+  $pids | ConvertTo-Json | Out-File (Join-Path $runDir "pids.json") -Encoding utf8
   Write-Host ("  started {0,-16} :{1}  pid {2}" -f $svc.Name, $svc.Port, $proc.Id) -ForegroundColor Green
+  }
+  catch {
+    foreach ($startedPid in $pids.Values) {
+      Stop-Process -Id $startedPid -Force -ErrorAction SilentlyContinue
+    }
+    throw
+  }
 }
 
 $pids | ConvertTo-Json | Out-File (Join-Path $runDir "pids.json") -Encoding utf8
 Write-Host "`nAll requested services launched. Gateway: http://127.0.0.1:8000/health" -ForegroundColor Cyan
 Write-Host "Logs in backend/.run/*.log   Stop with ./stop-all.ps1"
+

@@ -1,4 +1,4 @@
-// LARE Drive — visual grammar for the recruitment operating system.
+// Lityra Drive — visual grammar for the recruitment operating system.
 // Presentational primitives shared across Drive surfaces. Everything here is
 // data-driven; callers pass values derived from REAL API responses. Nothing
 // fabricates recruitment data.

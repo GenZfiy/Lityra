@@ -1,3 +1,4 @@
+import "../../styles/institution-operations-pages.css";
 import { useEffect, useState } from "react";
 import {
   ChevronRight, Building2, GitBranch, Users, GraduationCap, AlertTriangle,
@@ -73,7 +74,7 @@ export default function AnalyticsExplorer() {
   const riskPct = node?.learners ? Math.round((node.at_risk / node.learners) * 100) : 0;
 
   return (
-    <div>
+    <div className="page-composition page-composition-institution institution-ops institution-ops-analytics"><div>
       <PageHeader
         title="Institution Analytics"
         subtitle="Drill from the whole platform to a single student — every level respects your access scope."
@@ -98,7 +99,9 @@ export default function AnalyticsExplorer() {
       {loading || !node ? <Loading /> : node.learners === 0 ? (
         <EmptyState title="No learners in scope" hint="This unit has no roster records yet." />
       ) : (
-        <div className="space-y-5">
+        <div className="analytics-report">
+          <section className="analytics-summary" aria-label="Current unit summary">
+            <div className="analytics-summary-copy"><span>ROSTER INTELLIGENCE</span><h2>{cur.label}</h2><p>Drill into a child unit from the comparison below to refine this report.</p></div>
           {/* KPI hero */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Kpi icon={Users} tone="brand" label="Learners" value={node.learners}
@@ -111,9 +114,10 @@ export default function AnalyticsExplorer() {
             <Kpi icon={AlertTriangle} tone={riskPct >= 20 ? "rose" : "amber"} label="At risk" value={node.at_risk}
               foot={`${riskPct}% of this unit`} bar={riskPct} barTone={riskPct >= 20 ? "#e11d48" : "#f59e0b"} />
           </div>
+          </section>
 
           {/* Distributions */}
-          <div className="grid lg:grid-cols-3 gap-4">
+          <section className="analytics-distributions" aria-label="Learner distributions"><div className="analytics-section-heading"><span>COHORT PROFILE</span><p>Academic standing, enrolment status and year distribution</p></div><div className="analytics-chart-grid">
             <Card className="p-5">
               <CardTitle icon={BarChart3}>CGPA distribution</CardTitle>
               <CgpaBars bands={node.cgpa_bands} total={node.learners} />
@@ -134,14 +138,16 @@ export default function AnalyticsExplorer() {
               <YearBars dist={node.year_distribution} total={node.learners} />
             </Card>
           </div>
+          </section>
 
           {/* Children: comparison, or the student leaf */}
-          {node.child_level === "student"
-            ? <StudentTable students={node.children} />
-            : <UnitComparison node={node} childLabel={childLabel} onDrill={drill} />}
+          <section className="analytics-comparison" aria-label={node.child_level === "student" ? "Student records" : "Compare units"}>
+            <div className="analytics-section-heading"><span>{node.child_level === "student" ? "STUDENT DETAIL" : "SCOPE COMPARISON"}</span><p>{node.child_level === "student" ? "Learners in this reporting unit" : "Select a unit to continue the scoped drill-down"}</p></div>
+            {node.child_level === "student" ? <StudentTable students={node.children} /> : <UnitComparison node={node} childLabel={childLabel} onDrill={drill} />}
+          </section>
         </div>
       )}
-    </div>
+    </div></div>
   );
 }
 

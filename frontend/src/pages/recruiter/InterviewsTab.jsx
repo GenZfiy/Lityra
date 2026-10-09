@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { CalendarPlus, Video, Star, Check, X, UserCheck } from "lucide-react";
 import { Card, Badge, Button, Field, Input } from "../../components/ui/primitives.jsx";
-import { Loading, DataSource } from "../../components/ui/states.jsx";
+import { Loading } from "../../components/ui/states.jsx";
 import { useAsync } from "../../hooks/useAsync.js";
 import { api, withFallback } from "../../lib/api.js";
-import { demoInterviews } from "../../lib/demo.js";
+import "../../styles/recruiter-operations-pages.css";
 
 const DEC_TONE = { select: "teal", reject: "rose", hold: "amber", next_round: "brand" };
 
 export default function InterviewsTab({ id }) {
-  const loaded = useAsync(() => withFallback(api.driveInterviews(id), demoInterviews), [id]);
+  const loaded = useAsync(() => withFallback(api.driveInterviews(id), []), [id]);
   const [rows, setRows] = useState(null);
   const emptyForm = { candidate_id: "", round_order: "", stage: "technical", mode: "online", link: "", slot: "", interviewers: [{ name: "", email: "" }] };
   const [form, setForm] = useState(emptyForm);
@@ -18,6 +18,7 @@ export default function InterviewsTab({ id }) {
   const [names, setNames] = useState({});   // candidate_id -> { name, roll, email }
   const [rounds, setRounds] = useState([]); // drive workflow rounds
   const [marksDraft, setMarksDraft] = useState({}); // ivId -> { marks, max }
+  const [actionError, setActionError] = useState("");
   const list = rows ?? loaded.data ?? [];
   const draftFor = (ivId) => marksDraft[ivId] || { marks: "", max: "100" };
 
@@ -98,15 +99,13 @@ export default function InterviewsTab({ id }) {
 
   async function schedule(e) {
     e.preventDefault();
+    setActionError("");
     const interviewers = form.interviewers.filter((iw) => iw.email.trim());
     // Persist the chosen round in round_id (as its order) so the link survives reloads.
     const round_id = form.round_order !== "" ? String(form.round_order) : null;
     let iv;
-    try {
-      iv = await api.scheduleInterview({ drive_id: id, ...form, round_id, interviewers, slot: form.slot.replace("T", " ") });
-    } catch {
-      iv = { id: `iv-${Date.now()}`, ...form, status: "scheduled" };
-    }
+    try { iv = await api.scheduleInterview({ drive_id: id, ...form, round_id, interviewers, slot: form.slot.replace("T", " ") }); }
+    catch (error) { setActionError(error?.message || "The interview could not be scheduled. Check the details and try again."); return; }
     upsert({ id: iv.id, candidate_id: form.candidate_id, stage: form.stage, mode: form.mode,
              round_order: form.round_order !== "" ? Number(form.round_order) : undefined,
              status: "scheduled", decision: null, avg_rating: null });
@@ -133,13 +132,15 @@ export default function InterviewsTab({ id }) {
   }
 
   async function rate(ivId, competency, score) {
-    try { await api.rateInterview(ivId, { competency, score }); } catch { /* demo */ }
+    setActionError("");
+    try { await api.rateInterview(ivId, { competency, score }); } catch (error) { setActionError(error?.message || "The interview rating could not be saved."); return; }
     upsert({ id: ivId, avg_rating: score });
     // rating (out of 5) → the round's marks sheet
     syncRound(list.find((x) => x.id === ivId), { marks: score, max_marks: 5 });
   }
   async function decide(ivId, decision) {
-    try { await api.decideInterview(ivId, { decision }); } catch { /* demo */ }
+    setActionError("");
+    try { await api.decideInterview(ivId, { decision }); } catch (error) { setActionError(error?.message || "The interview decision could not be saved."); return; }
     upsert({ id: ivId, decision, status: "completed" });
     // Select → mark cleared in that round; Reject → not cleared.
     syncRound(list.find((x) => x.id === ivId), { cleared: decision === "select" });
@@ -149,6 +150,7 @@ export default function InterviewsTab({ id }) {
     setMarksDraft((d) => ({ ...d, [ivId]: { ...draftFor(ivId), [field]: value } }));
   }
   async function saveMarks(iv) {
+    setActionError("");
     const d = draftFor(iv.id);
     if (d.marks === "" || d.marks == null) return;
     const marks = Number(d.marks);
@@ -158,17 +160,15 @@ export default function InterviewsTab({ id }) {
     syncRound(iv, { marks, max_marks: max });
     // Reflect an out-of-5 rating on the interview so its avg shows too.
     const score = Math.max(1, Math.min(5, Math.round((marks / max) * 5)));
-    try { await api.rateInterview(iv.id, { competency: "technical", score }); } catch { /* demo */ }
+    try { await api.rateInterview(iv.id, { competency: "technical", score }); } catch (error) { setActionError(error?.message || "The interview score could not be saved."); return; }
     upsert({ id: iv.id, marks, max_marks: max, avg_rating: score });
   }
 
   return (
-    <div className="grid lg:grid-cols-[340px_1fr] gap-6">
+    <section className="page-composition page-composition-recruiter-detail hire-ops hire-ops--interviews"><div className="hire-interviews-workspace">
       {/* Schedule form */}
-      <Card className="p-6 h-fit">
-        <h2 className="font-display font-semibold text-ink-900 mb-4 flex items-center gap-2">
-          <CalendarPlus size={18} className="text-brand-500" /> Schedule interview
-        </h2>
+      <aside aria-labelledby="interview-scheduler-title"><Card className="hire-interview-scheduler p-6 h-fit">
+        <div className="hire-interview-scheduler-title"><span className="hire-ops-kicker">01 · Schedule</span><h2 id="interview-scheduler-title" className="font-display font-semibold text-ink-900"><CalendarPlus size={18} aria-hidden="true" /> Book an interview</h2><p>Connect a candidate with a round and an interview panel.</p></div>
         <form onSubmit={schedule} className="space-y-3">
           <Field label="Candidate">
             {eligible.length > 0 ? (
@@ -271,20 +271,20 @@ export default function InterviewsTab({ id }) {
 
           <Button type="submit" className="w-full"><CalendarPlus size={16} /> Schedule</Button>
         </form>
-      </Card>
+      </Card></aside>
 
       {/* Interview list */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display font-semibold text-ink-900">Interviews</h2>
-          <DataSource live={loaded.live} />
-        </div>
-        {list.length === 0 && <Card className="p-6"><p className="text-sm text-slate-400">No interviews scheduled.</p></Card>}
-        {list.map((iv) => (
-          <Card key={iv.id} className="p-5">
-            <div className="flex items-start justify-between">
+      <section className="hire-interview-agenda" aria-labelledby="interview-agenda-title">
+        <header className="hire-interview-agenda-heading"><div><span className="hire-ops-kicker">02 · Panel agenda</span><h2 id="interview-agenda-title" className="font-display font-semibold text-ink-900">Scheduled interviews</h2><p>Review the panel, appointment, and candidate outcome in one place.</p></div>{!loaded.live && <span role="status" className="hire-source-state">Live interview data is unavailable.</span>}</header>
+        {actionError && <p role="alert" className="hire-interview-error">{actionError}</p>}
+        {list.length === 0 && <Card className="hire-interview-empty p-6"><p className="text-sm text-slate-500">No interviews scheduled.</p></Card>}
+        <ol className="hire-interview-agenda-list">{list.map((iv, index) => (
+          <li key={iv.id} className="hire-interview-record">
+            <div className="hire-interview-sequence" aria-hidden="true">{String(index + 1).padStart(2, "0")}</div>
+            <Card className="hire-interview-record-card p-5">
+            <div className="hire-interview-record-heading">
               <div className="min-w-0">
-                <p className="font-medium text-ink-900">
+                <p className="font-display font-semibold text-ink-900">
                   {names[iv.candidate_id]?.name || iv.candidate_id}
                   {names[iv.candidate_id]?.roll && (
                     <span className="ml-2 text-xs font-normal text-slate-400">· {names[iv.candidate_id].roll}</span>
@@ -307,6 +307,12 @@ export default function InterviewsTab({ id }) {
                 <Badge tone="slate">{iv.status}</Badge>
               )}
             </div>
+
+            <dl className="hire-interview-meta">
+              <div><dt>Appointment</dt><dd>{iv.slot || "Time not set"}</dd></div>
+              <div><dt>Interviewers</dt><dd>{(iv.interviewers || []).map((person) => person.name || person.email).filter(Boolean).join(", ") || "Panel not assigned"}</dd></div>
+              {iv.link && <div><dt>Meeting</dt><dd><a href={iv.link} target="_blank" rel="noreferrer">Open meeting link</a></dd></div>}
+            </dl>
 
             {iv.avg_rating != null && (
               <p className="mt-3 text-sm text-slate-600 flex items-center gap-1.5">
@@ -345,9 +351,10 @@ export default function InterviewsTab({ id }) {
                 <UserCheck size={15} /> Recommended for offer
               </p>
             )}
-          </Card>
-        ))}
-      </div>
-    </div>
+            </Card>
+          </li>
+        ))}</ol>
+      </section>
+    </div></section>
   );
 }

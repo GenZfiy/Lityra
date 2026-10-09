@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Generate + install one systemd service per LARE process (gateway + 26 services),
+# Generate + install one systemd service per LARE process (gateway + 31 services),
 # reading backend/services.txt. This is the CEO guide's Phase 15 ("Run as Service")
-# done for all 27 processes: each gets its own unit with auto-restart, so they
+# done for all 32 processes: each gets its own unit with auto-restart, so they
 # survive crashes and reboots. Run with sudo.
 #
 #   sudo ./deploy/install-systemd.sh

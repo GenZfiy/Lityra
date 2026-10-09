@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -10,7 +11,7 @@ import ProctorBanner from "../components/ProctorBanner.jsx";
 import { api } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 
-// LARE Learn — Coding Practice. Wired to the live coding sandbox via the LMS
+// Lityra Learn — Coding Practice. Wired to the live coding sandbox via the LMS
 // practice API. Every solved problem feeds the learner's Skill Map (Cognitive
 // Twin). No demo fallback: this is a real, graded practice surface.
 
@@ -63,7 +64,7 @@ export default function CodingPractice() {
     return m;
   }, [skills]);
 
-  if (problems === null) return <Loading />;
+  if (problems === null) return <Loading label="Loading coding challenges…" />;
 
   if (active) {
     return (
@@ -80,7 +81,7 @@ export default function CodingPractice() {
   const skillNames = Object.keys(bySkill).sort();
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-coding-practice"><div>
       <PageHeader
         title="Coding Practice"
         subtitle="Solve real problems in the language of your choice. Every solve sharpens your Skill Map."
@@ -115,7 +116,7 @@ export default function CodingPractice() {
           hint="Your trainer hasn't published practice problems. Check back soon."
         />
       ) : (
-        <div className="space-y-8">
+        <div className="practice-problem-index space-y-8" aria-label="Problems grouped by skill">
           {skillNames.map((skill) => {
             const sm = solvedSkillMastery[skill];
             return (
@@ -138,7 +139,7 @@ export default function CodingPractice() {
           })}
         </div>
       )}
-    </div>
+    </div></div>
   );
 }
 

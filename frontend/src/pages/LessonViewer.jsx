@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, BookOpen } from "lucide-react";
@@ -7,7 +8,7 @@ import LessonBlocks from "../components/LessonBlocks.jsx";
 import ProctorBanner from "../components/ProctorBanner.jsx";
 import { api } from "../lib/api.js";
 
-// Student view of a LARE "living lesson": rich text (markdown + tables),
+// Student view of a Lityra "living lesson": rich text (markdown + tables),
 // runnable code, callouts, and inline checks that update your skill map.
 export default function LessonViewer() {
   const { lid } = useParams();
@@ -23,11 +24,11 @@ export default function LessonViewer() {
     })();
   }, [lid]);
 
-  if (loading) return <Loading />;
+  if (loading) return <Loading label="Loading lesson content…" />;
   const blocks = lesson?.content || [];
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-lesson-viewer"><div>
       <PageHeader
         title={lesson?.title || "Lesson"}
         subtitle="Read, run, and check your understanding — this lesson learns about you as you go."
@@ -39,12 +40,12 @@ export default function LessonViewer() {
           <p className="mt-3 text-slate-500">No material has been added to this lesson yet.</p>
         </Card>
       ) : (
-        <div className="max-w-2xl">
+        <div className="lesson-reading-canvas max-w-2xl">
           {blocks.some((b) => b.type === "check") && <ProctorBanner active />}
           <LessonBlocks blocks={blocks} grade={(bid, choice) => api.gradeLessonCheck(lid, bid, choice)} />
           <p className="text-center text-xs text-slate-400 pt-5">End of lesson · your skill map updates from the checks above.</p>
         </div>
       )}
-    </div>
+    </div></div>
   );
 }

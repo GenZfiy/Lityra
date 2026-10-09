@@ -5,7 +5,7 @@
 ---
 
 ## 1. Purpose
-Orchestrate the full recruitment lifecycle for a drive: company + college linkage, roles/positions, eligibility criteria, schedule/venue, rounds, and status. It is the coordinator that ties Candidate, Exam Engine, Coding, Evaluation, Interview, and Result together, and administers the internship/PPO pipeline with Lare Consulting and Technologies Pvt. Ltd.
+Orchestrate the full recruitment lifecycle for a drive: company + college linkage, roles/positions, eligibility criteria, schedule/venue, rounds, and status. It is the coordinator that ties Candidate, Exam Engine, Coding, Evaluation, Interview, and Result together, and administers the internship/PPO pipeline with GenZify
 
 ## 2. Responsibilities
 - Create drives with company, participating colleges, roles/positions, and reporting time/venue.

@@ -1,7 +1,7 @@
 ---
-title: "LARE Platform — Complete Project Documentation"
-subtitle: "LARE Learn (LMS) & LARE Hire (Drive) — Architecture, Design, and Feature Reference"
-author: "LARE Cloud Solutions — a unit of LARE Consulting & Technology Pvt. Ltd."
+title: "Lityra Platform — Complete Project Documentation"
+subtitle: "Lityra Learn (LMS) & Lityra Hire (Drive) — Architecture, Design, and Feature Reference"
+author: "GenZify — Engineering Human Potential Through Technology"
 date: "2026"
 lang: en
 toc: true
@@ -14,18 +14,18 @@ geometry: margin=1in
 
 # 1. Executive Summary
 
-**LARE** is a single, cloud‑hosted platform that carries a person from *learning a skill* to *being hired for it*. It is delivered as **two products that share one backend**:
+**Lityra** is a single, cloud‑hosted platform that carries a person from *learning a skill* to *being hired for it*. It is delivered as **two products that share one backend**:
 
-- **LARE Learn** (the LMS) — an AI‑assisted learning environment that teaches, tests, and certifies skills. It builds a live model of each learner (the *Cognitive Twin*), auto‑generates lesson material and coding practice, coaches the learner toward their weak areas, and issues verifiable credentials.
-- **LARE Hire** (the Drive/recruitment product) — a proctored, skills‑first assessment and hiring suite. Recruiters build question banks and exams, run campus/company drives with anti‑cheat proctoring, evaluate and rank candidates, conduct structured interviews, and issue offers.
+- **Lityra Learn** (the LMS) — an AI‑assisted learning environment that teaches, tests, and certifies skills. It builds a live model of each learner (the *Cognitive Twin*), auto‑generates lesson material and coding practice, coaches the learner toward their weak areas, and issues verifiable credentials.
+- **Lityra Hire** (the Drive/recruitment product) — a proctored, skills‑first assessment and hiring suite. Recruiters build question banks and exams, run campus/company drives with anti‑cheat proctoring, evaluate and rank candidates, conduct structured interviews, and issue offers.
 
-The two products are **intentionally separate in the user experience** (a student never sees the recruiter console and vice‑versa) but **share a common platform**: the same identity system, the same 26 backend microservices, the same design system, and the same PostgreSQL database (with an isolated schema per service).
+The two products are **intentionally separate in the user experience** (a student never sees the recruiter console and vice‑versa) but **share a common platform**: the same identity system, the same 31 backend microservices, the same design system, and the same PostgreSQL database (with an isolated schema per service).
 
 This document is the complete engineering and product reference for the platform. It explains:
 
 - **What the products are** and the problems they solve.
 - **The three‑tier architecture** (presentation, application, data) and how requests flow.
-- **The backend**: all 26 microservices + the API gateway, the schema‑per‑service data model, and the event bus.
+- **The backend**: all 31 microservices + the API gateway, the schema‑per‑service data model, and the event bus.
 - **The API architecture**: conventions, the JSON envelope, RS256 JWT authentication, gateway routing, and the full endpoint catalogue.
 - **The frontend architecture**: the React/Vite single‑page app, routing, the API client, the design system, and shared components.
 - **Every page and every major control** across both products (43 screens).
@@ -36,25 +36,25 @@ This document is the complete engineering and product reference for the platform
 
 # 2. The Problem We Are Overcoming
 
-Skilling and hiring are broken at the seams where they should connect. The specific problems LARE targets:
+Skilling and hiring are broken at the seams where they should connect. The specific problems Lityra targets:
 
 ## 2.1 For learners
-1. **One‑size‑fits‑all courses.** Traditional LMS platforms serve the same content to everyone regardless of what a learner already knows or struggles with. LARE builds a **Cognitive Twin** — a per‑learner skill profile derived from real assessment and coding performance — and adapts content, practice, and coaching to it.
-2. **Passive video consumption ≠ skill.** Watching lectures does not build coding or aptitude ability. LARE emphasises **active practice**: coding practice with instant feedback, adaptive drills that tune difficulty in real time, and "practice worlds" (workplace simulations).
-3. **No trustworthy proof of skill.** A certificate that cannot be verified is worthless to an employer. LARE issues **cryptographically signed credentials** (the Sovereign Learning Wallet) and public verification pages.
-4. **Forgetting.** Skills decay. LARE's **spaced‑reinforcement** ("Keep Sharp") schedules review of exactly the topics a learner is about to forget.
+1. **One‑size‑fits‑all courses.** Traditional LMS platforms serve the same content to everyone regardless of what a learner already knows or struggles with. Lityra builds a **Cognitive Twin** — a per‑learner skill profile derived from real assessment and coding performance — and adapts content, practice, and coaching to it.
+2. **Passive video consumption ≠ skill.** Watching lectures does not build coding or aptitude ability. Lityra emphasises **active practice**: coding practice with instant feedback, adaptive drills that tune difficulty in real time, and "practice worlds" (workplace simulations).
+3. **No trustworthy proof of skill.** A certificate that cannot be verified is worthless to an employer. Lityra issues **cryptographically signed credentials** (the Sovereign Learning Wallet) and public verification pages.
+4. **Forgetting.** Skills decay. Lityra's **spaced‑reinforcement** ("Keep Sharp") schedules review of exactly the topics a learner is about to forget.
 
 ## 2.2 For colleges / institutions
-1. **Tool sprawl.** Separate tools for content, assessments, coding labs, certificates, and placement. LARE unifies them.
-2. **No live visibility.** Administrators cannot see, at a glance, how a cohort is performing or where the weak spots are. LARE provides **live analytics** (rankings, cohort readiness, weak‑area heatmaps).
-3. **Exam integrity.** Online assessments are easy to cheat. LARE adds **proctoring and anti‑cheat flags on every page where a student submits an answer**.
-4. **The placement gap.** Learning and hiring are disconnected. LARE Hire is built into the same platform, so a college's learners flow directly into recruiter pipelines.
+1. **Tool sprawl.** Separate tools for content, assessments, coding labs, certificates, and placement. Lityra unifies them.
+2. **No live visibility.** Administrators cannot see, at a glance, how a cohort is performing or where the weak spots are. Lityra provides **live analytics** (rankings, cohort readiness, weak‑area heatmaps).
+3. **Exam integrity.** Online assessments are easy to cheat. Lityra adds **proctoring and anti‑cheat flags on every page where a student submits an answer**.
+4. **The placement gap.** Learning and hiring are disconnected. Lityra Hire is built into the same platform, so a college's learners flow directly into recruiter pipelines.
 
 ## 2.3 For startups / recruiters
-1. **Resume‑based hiring is noisy.** Resumes over‑ and under‑state ability. LARE Hire evaluates **demonstrated skill** through proctored assessments and coding rounds.
-2. **Slow test authoring.** Building fair question banks and papers is slow. LARE **AI‑generates** questions and coding problems with hidden test cases.
-3. **Cheating at scale.** Remote assessment invites cheating. LARE's proctoring, anti‑cheat event capture, and **adversarial viva** (prove you understand your own solution) make scores trustworthy.
-4. **Unstructured interviews.** LARE provides structured interview scheduling, rating, and automated evaluation/ranking.
+1. **Resume‑based hiring is noisy.** Resumes over‑ and under‑state ability. Lityra Hire evaluates **demonstrated skill** through proctored assessments and coding rounds.
+2. **Slow test authoring.** Building fair question banks and papers is slow. Lityra **AI‑generates** questions and coding problems with hidden test cases.
+3. **Cheating at scale.** Remote assessment invites cheating. Lityra's proctoring, anti‑cheat event capture, and **adversarial viva** (prove you understand your own solution) make scores trustworthy.
+4. **Unstructured interviews.** Lityra provides structured interview scheduling, rating, and automated evaluation/ranking.
 
 ## 2.4 The unifying thesis
 > **Teach a skill, measure it honestly, prove it verifiably, and connect it to an opportunity — on one platform.**
@@ -63,9 +63,9 @@ Skilling and hiring are broken at the seams where they should connect. The speci
 
 # 3. Product Overview
 
-## 3.1 LARE Learn (LMS)
+## 3.1 Lityra Learn (LMS)
 
-LARE Learn is the student‑facing learning product. Its capabilities:
+Lityra Learn is the student‑facing learning product. Its capabilities:
 
 | Capability | What it does |
 |---|---|
@@ -86,7 +86,7 @@ LARE Learn is the student‑facing learning product. Its capabilities:
 | **My Wallet** | The Sovereign Learning Wallet — a signed, verifiable competence record. |
 | **Profile / Settings / Notifications** | Account, preferences, and in‑app inbox. |
 
-**Staff‑facing (within LARE Learn):**
+**Staff‑facing (within Lityra Learn):**
 
 | Console | Purpose |
 |---|---|
@@ -94,9 +94,9 @@ LARE Learn is the student‑facing learning product. Its capabilities:
 | **Curriculum Studio** | Author real curriculum + AI‑assisted lesson material. |
 | **Trainer Console** | Roster, attendance, grading, and progress. |
 
-## 3.2 LARE Hire (Drive)
+## 3.2 Lityra Hire (Drive)
 
-LARE Hire is the recruiter/placement product. Its capabilities:
+Lityra Hire is the recruiter/placement product. Its capabilities:
 
 | Capability | What it does |
 |---|---|
@@ -115,7 +115,7 @@ LARE Hire is the recruiter/placement product. Its capabilities:
 
 The platform is a **complete, working application** (not a prototype). Delivered across the build:
 
-- 26 backend microservices + gateway, running against managed PostgreSQL (RDS).
+- 31 backend microservices + gateway, running against managed PostgreSQL (RDS).
 - The full React/Vite SPA serving both products with role‑based routing.
 - The Cognitive Twin (assessment + coding fusion), AI Tutor, AI micro‑lesson generation, adaptive drill, practice worlds, peer mesh, spaced review, and the signed wallet.
 - Proctoring/anti‑cheat hooks, coding sandbox execution, certificate issue/verify, and the recruiter drive pipeline end‑to‑end.
@@ -126,21 +126,21 @@ The platform is a **complete, working application** (not a prototype). Delivered
 
 # 4. System Architecture (Three-Tier)
 
-LARE is a classic **three-tier architecture**, chosen so each layer scales and is secured independently.
+Lityra is a classic **three-tier architecture**, chosen so each layer scales and is secured independently.
 
 ```
                           Internet (HTTPS/TLS)
                                   |
         +-------------------------------------------------+
  TIER 1 |  PRESENTATION                                    |
-        |  React + Vite SPA  -  LARE Learn + LARE Hire     |
+        |  React + Vite SPA  -  Lityra Learn + Lityra Hire     |
         |  Served by Nginx (static dist) + TLS termination |
         +----------------------------+--------------------+
                                      |  /api/... (reverse proxy)
         +----------------------------+--------------------+
  TIER 2 |  APPLICATION                                     |
         |  API Gateway (:8000) - auth + longest-prefix     |
-        |  26 Flask microservices (127.0.0.1:8001..8026)   |
+        |  31 Flask microservices (127.0.0.1:8001..8031)   |
         |  AI Orchestration -> Gemini / Mistral            |
         |  Event bus (HTTP fan-out or Redis Streams)       |
         +----------------------------+--------------------+
@@ -163,7 +163,7 @@ flowchart TB
   end
   subgraph T2["Tier 2 - Application"]
     GW["API Gateway :8000"]
-    SVC["26 Flask microservices"]
+    SVC["31 Flask microservices"]
     AI["AI Orchestration -> Gemini / Mistral"]
     BUS["Event bus (HTTP / Redis Streams)"]
   end
@@ -201,7 +201,7 @@ flowchart TB
 | Shared library | `lare_common` (config, db, auth context, errors, events, exports, AI client) |
 | Datastore | PostgreSQL 16 (Amazon RDS), schema-per-service |
 | Event bus | Redis Streams (or HTTP fan-out when Redis is absent) |
-| AI | Google Gemini (LARE Learn), Mistral (LARE Hire) via a common AI client |
+| AI | Google Gemini (Lityra Learn), Mistral (Lityra Hire) via a common AI client |
 | Auth | RS256 JWT (Auth signs; every service + gateway verify) |
 | Sandbox | Subprocess or bubblewrap isolation for code execution |
 | Web/serve | Nginx (static + TLS + reverse proxy); services as processes/systemd units |
@@ -215,7 +215,7 @@ DNS --- A record --- Elastic IP
                      [ EC2 ]
                      Nginx :443/:80
                        |-- / (static dist)  -> /var/www/lare
-                       +-- /api -> Gateway :8000 -> services :8001..8026
+                       +-- /api -> Gateway :8000 -> services :8001..8031
                                                         |
                                                   RDS PostgreSQL :5432
 ```
@@ -224,10 +224,10 @@ DNS --- A record --- Elastic IP
 
 # 5. Backend Architecture - Microservices
 
-The backend is **26 Flask microservices plus a gateway**. Each service:
+The backend is **31 Flask microservices plus a gateway**. Each service:
 
 - Owns a **single domain** and a **single PostgreSQL schema** (schema name = service name; `auth` uses `lare_auth` because `auth` is reserved).
-- Is started independently (`manage.py serve`) on its own port (`8001..8026`; gateway on `8000`).
+- Is started independently (`manage.py serve`) on its own port (`8001..8031`; gateway on `8000`).
 - Shares the `lare_common` library for config, database sessions, auth-context extraction, error handling, events, and document exports.
 - Returns the standard JSON envelope and honours RS256 JWT verification.
 
@@ -270,6 +270,11 @@ The gateway is the single entry point. Responsibilities:
 | 24 | **ai_orchestration** | 8024 | Platform | Central AI request orchestration and budgeting. |
 | 25 | **ai_tutor** | 8025 | Platform | Conversational tutor, sessions, study-plan and advice generation. |
 | 26 | **organization** | 8026 | Platform | Organisation/tenant metadata. |
+| 27 | **evidence** | 8027 | Hire | Append-only evidence ledger and conflict resolution. |
+| 28 | **competency** | 8028 | Hire | Evaluation competency catalogue and drive models. |
+| 29 | **decision** | 8029 | Hire | Candidate decision records and decision queue. |
+| 30 | **action** | 8030 | Hire | Recruiter attention queue and action resolution. |
+| 31 | **recruit_ai** | 8031 | Hire | Drive insights and interviewer calibration. |
 | - | **gateway** | 8000 | Infra | Auth + routing + reverse proxy (front door). |
 
 ## 5.3 Schema-per-service data model
@@ -288,7 +293,7 @@ Representative tables (not exhaustive):
 - **curriculum**: curricula, years, modules, `lessons` (with a JSON `content` block list).
 - **gamification**: learner XP/level/badge/streak records; leaderboard view.
 - **drive**: `drives`, `drive_roles` (with `skills`), eligibility, rounds, registrations.
-- **certification**: certificates with a readable `verify_id` (e.g. `LARE-VER-####`).
+- **certification**: certificates with a high-entropy random `verify_id`.
 
 ## 5.4 The event bus
 
@@ -331,7 +336,7 @@ erDiagram
 
 ## 6.1 Key entities
 
-- **User** (auth) - the credential/identity. A user is a **learner** in LARE Learn and/or a **candidate** in LARE Hire.
+- **User** (auth) - the credential/identity. A user is a **learner** in Lityra Learn and/or a **candidate** in Lityra Hire.
 - **Skill Profile** (assessment) - the **Cognitive Twin**: a per-learner fusion of written-assessment and coding performance into skill dimensions (communication, coding, aptitude, project).
 - **Wallet Credential** (assessment) - a signed, verifiable competence record with a public `verify_id`.
 - **Drive / Round / Registration** (drive) - the recruitment pipeline.
@@ -344,7 +349,7 @@ erDiagram
 
 ## 7.1 Conventions
 
-- **Base path**: the SPA calls `/api`; Nginx proxies to the gateway; the gateway routes onward. Product prefixes: `/lms/...` (LARE Learn), `/drive/...` (LARE Hire), plus `/auth`, `/ai`, `/files`, `/notify`, `/analytics`, and the public `/verify`.
+- **Base path**: the SPA calls `/api`; Nginx proxies to the gateway; the gateway routes onward. Product prefixes: `/lms/...` (Lityra Learn), `/drive/...` (Lityra Hire), plus `/auth`, `/ai`, `/files`, `/notify`, `/analytics`, and the public `/verify`.
 - **Versioning**: every route is versioned (`/v1/`).
 - **Response envelope**: all JSON responses use `{ data, meta, errors }`. The client returns `data` on success and throws a typed `ApiError(code, status, details)` on failure.
 - **Idempotency & safety**: reads are `GET`; state changes are `POST`/`PUT`/`DELETE`.
@@ -391,7 +396,7 @@ The following is the complete client-facing endpoint surface, grouped by area. (
 - `GET /auth/v1/me` - current user.
 - `PUT /notify/v1/preferences` - notification channel prefs.
 
-### 7.4.2 LARE Learn - learning core
+### 7.4.2 Lityra Learn - learning core
 - `GET /lms/v1/curricula`, `GET /lms/v1/curricula/{id}/tree` - curriculum + tree.
 - `GET /lms/v1/content/playlist?learner_id=...` - personalised playlist.
 - `GET /lms/v1/content/recommendations?learner_id=...` - recommendations.
@@ -404,7 +409,7 @@ The following is the complete client-facing endpoint surface, grouped by area. (
 - `POST /lms/v1/assessments/{aid}/attempts`, `POST /lms/v1/attempts/{attemptId}/submit` - take-flow.
 - `GET /lms/v1/assessments/summary?learner_id=...` - assessment summary.
 
-### 7.4.3 LARE Learn - Cognitive Twin, coaching, careers, reviews
+### 7.4.3 Lityra Learn - Cognitive Twin, coaching, careers, reviews
 - `GET /lms/v1/assessments/twin/{learnerId}` - the LMS Cognitive Twin.
 - `GET /lms/v1/assessments/coach/{learnerId}` (`?force=1` regenerates) - AI study plan.
 - `POST /lms/v1/assessments/coach/{learnerId}/progress` - mark a plan day done.
@@ -414,7 +419,7 @@ The following is the complete client-facing endpoint surface, grouped by area. (
 - `GET /lms/v1/reviews/{learnerId}`, `POST /lms/v1/reviews/{learnerId}/review` - spaced review.
 - `POST /lms/v1/reviews/{learnerId}/activity` - record real practice into the schedule.
 
-### 7.4.4 LARE Learn - practice, drill, worlds, mesh, lessons, wallet
+### 7.4.4 Lityra Learn - practice, drill, worlds, mesh, lessons, wallet
 - `GET /lms/v1/practice/problems`, `POST /lms/v1/practice/session`, `POST /lms/v1/practice/{sid}/run`, `POST /lms/v1/practice/{sid}/submit` - coding practice.
 - `GET /lms/v1/practice/skills/{learnerId}` - practice-derived skills.
 - `POST /lms/v1/practice/{sid}/viva`, `POST /lms/v1/practice/viva/{vivaId}` - adversarial viva.
@@ -424,27 +429,27 @@ The following is the complete client-facing endpoint surface, grouped by area. (
 - `POST /lms/v1/micro-lessons/{learnerId}/generate`, `GET /lms/v1/micro-lessons/{learnerId}`, `POST /lms/v1/micro-lessons/author-blocks` - AI micro-lessons.
 - `GET /lms/v1/wallet/{learnerId}`, `POST .../issue`, `POST .../revoke`, `GET .../export.pdf`, `GET /verify/wallet/{verifyId}` - the wallet.
 
-### 7.4.5 LARE Learn - authoring & staff
+### 7.4.5 Lityra Learn - authoring & staff
 - `GET/POST /lms/v1/colleges`, `GET/POST /lms/v1/colleges/{cid}/cohorts` - institutions.
 - `GET/POST /lms/v1/learners`, `POST /lms/v1/learners/import`, `POST /lms/v1/learners/{lid}/verify`, `POST /lms/v1/learners/{lid}/promote` - roster.
 - `POST /lms/v1/curricula`, `.../years`, `.../modules`, `.../lessons`, `GET /lms/v1/lessons/{lid}`, `PUT /lms/v1/lessons/{lid}/content`, `POST /lms/v1/lessons/{lid}/check`, `POST /lms/v1/curricula/{cid}/publish` - curriculum authoring.
 - `POST /lms/v1/attendance`, `POST /lms/v1/progress/compute-year`, `POST /lms/v1/answers/{answerId}/grade` - trainer progress.
 - `GET/POST /lms/v1/certificates/...`, `GET /lms/v1/certificates/{id}/pdf`, `GET /verify/{verifyId}` - certification.
 
-### 7.4.6 LARE Hire - candidate & drives
+### 7.4.6 Lityra Hire - candidate & drives
 - `GET /drive/v1/drives`, `GET /drive/v1/drives/{id}` - browse drives.
 - `POST /drive/v1/attend`, `POST /drive/v1/attend/resume` - public attend flow (no login).
 - `POST /drive/v1/candidate/apply`, `GET /drive/v1/candidate/applications`, `GET/PUT /drive/v1/candidate/profile` - candidate.
 - `GET /drive/v1/opportunities?candidate_id=...` - matched opportunities.
 - `GET /drive/v1/evaluations/twin/{candidateId}` - the Hire evaluation twin.
 
-### 7.4.7 LARE Hire - exam take-flow & proctoring
+### 7.4.7 Lityra Hire - exam take-flow & proctoring
 - `GET /drive/v1/exams`, `GET /drive/v1/exams/{examId}`, `GET /drive/v1/exams/{examId}/paper` - exam meta/paper.
 - `POST /drive/v1/exams/{examId}/start`, `GET /drive/v1/exam-sessions/{sid}/state`, `POST .../save`, `POST .../submit` - session flow.
 - `POST /drive/v1/proctor/start`, `POST /drive/v1/proctor/{examSessionId}/events` - proctoring.
 - `POST /drive/v1/coding/run-adhoc`, `GET /drive/v1/coding/languages`, `POST /drive/v1/coding/session`, `POST .../run`, `POST .../submit` - coding rounds.
 
-### 7.4.8 LARE Hire - recruiter management
+### 7.4.8 Lityra Hire - recruiter management
 - `POST /drive/v1/drives`, `DELETE /drive/v1/drives/{id}`, `.../roles`, `.../eligibility`, `.../rounds`, `GET/PUT .../workflow` - drive setup.
 - `GET .../rounds/{order}/scores`, `POST .../scores`, `POST .../candidates`, `DELETE .../candidates/{cid}`, `POST .../publish` - rounds.
 - `GET .../rounds/{order}/export` - marks .xlsx export.
@@ -466,7 +471,7 @@ The following is the complete client-facing endpoint surface, grouped by area. (
 
 ## 8.1 Overview
 
-The frontend is a **single-page application (SPA)** built with **React 18 + Vite**. It serves **both products** from one bundle, with routing and navigation that keep LARE Learn and LARE Hire separate.
+The frontend is a **single-page application (SPA)** built with **React 18 + Vite**. It serves **both products** from one bundle, with routing and navigation that keep Lityra Learn and Lityra Hire separate.
 
 ```mermaid
 flowchart LR
@@ -507,7 +512,7 @@ Two shared modules provide a consistent, themeable UI:
 
 - **`components/ui/primitives.jsx`** - the building blocks: `Card`, `Button` (variants: primary, secondary, ghost, amber; supports `as={Link}`), `Badge` (tone: brand/teal/amber/rose/slate), `Input`, `Field`, `XPBar`, `StatTile`.
 - **`components/ui/states.jsx`** - `PageHeader`, `Loading`, `DataSource` (a live/demo indicator), and empty/error states.
-- **`components/ui/Logo.jsx`** - the LARE brand mark.
+- **`components/ui/Logo.jsx`** - the Lityra brand mark.
 
 Design language: a navy + gold brand palette, a display + body type pairing, generous spacing, rounded cards, and Framer Motion for subtle animation (XP bars, reveals).
 
@@ -534,7 +539,7 @@ This section documents **every screen** in the application: its route, purpose, 
 ## 9.A Public & Authentication
 
 ### 9.A.1 Landing (`/`)
-- **Purpose**: marketing entry point introducing LARE Learn and LARE Hire.
+- **Purpose**: marketing entry point introducing Lityra Learn and Lityra Hire.
 - **Elements**: hero headline + tagline, product highlights, calls to action.
 - **Buttons**: **Log in** (to `/login`), **Get started / Register** (to `/register`).
 
@@ -557,13 +562,13 @@ This section documents **every screen** in the application: its route, purpose, 
 - Shared split-screen frame for the auth pages (brand panel + form panel).
 
 ### 9.A.6 App Chooser (`/apps`)
-- **Purpose**: after login, choose the product to enter (LARE Learn or LARE Hire), filtered by the user's roles.
-- **Buttons**: **Enter LARE Learn** (`/lms`), **Enter LARE Hire** (`/drive`).
+- **Purpose**: after login, choose the product to enter (Lityra Learn or Lityra Hire), filtered by the user's roles.
+- **Buttons**: **Enter Lityra Learn** (`/lms`), **Enter Lityra Hire** (`/drive`).
 
 ### 9.A.7 Attend Drive (`/drive/attend`)
 - **Purpose**: public, **no-login** drive attendance for walk-in campus drives.
 - **Elements**: drive code / student details form; resume-by-id.
-- **Buttons**: **Attend** (`api.attendDrive` -> returns a scoped student session), **Resume** (`api.attendResume`).
+- **Buttons**: **Attend** (`api.attendDrive` -> pending registration + email OTP), **Resume** (`api.attendResume` -> email OTP after matching Student ID and email). OTP verification signs the user in; Student ID never issues a session.
 
 ### 9.A.8 Wallet Verify (`/verify/wallet/:verifyId`)
 - **Purpose**: public verification of a Sovereign Learning Wallet credential.
@@ -571,11 +576,11 @@ This section documents **every screen** in the application: its route, purpose, 
 - **Data**: `api.verifyWallet(verifyId)` (public, no auth).
 
 ### 9.A.9 Certificate Verify (`/verify/:verifyId`)
-- **Purpose**: public certificate verification page. Accepts a readable id (e.g. `LARE-VER-####`).
+- **Purpose**: public certificate verification page. Accepts a high-entropy verification ID.
 - **Elements**: verify-id input, verified certificate render (holder name, issued date, credential).
 - **Buttons**: **Verify** (`api.verifyCertificate(verifyId)`), which opens the certificate.
 
-## 9.B LARE Learn - Student
+## 9.B Lityra Learn - Student
 
 ### 9.B.1 Dashboard (`/lms`)
 - **Purpose**: the learner's personalised home. **All values are the logged-in learner's real data** (no hard-coded content).
@@ -685,7 +690,7 @@ This section documents **every screen** in the application: its route, purpose, 
 
 \newpage
 
-## 9.C LARE Learn - Staff Consoles
+## 9.C Lityra Learn - Staff Consoles
 
 ### 9.C.1 Admin Console (`/lms/admin`)
 - **Purpose**: college/organisation administration and admin analytics.
@@ -707,7 +712,7 @@ This section documents **every screen** in the application: its route, purpose, 
 - **Buttons**: **Mark attendance** (`api.markAttendance`), **Grade answer** (`api.gradeAnswer`), **Compute year** (`api.computeYear`), **Verify/Promote learner** (`api.verifyLearner`, `api.promoteLearner`).
 - **Data**: `api.learners`.
 
-## 9.D LARE Hire - Candidate
+## 9.D Lityra Hire - Candidate
 
 ### 9.D.1 Drives (`/drive`)
 - **Purpose**: browse open drives and attend.
@@ -726,7 +731,7 @@ This section documents **every screen** in the application: its route, purpose, 
 - **Buttons**: **Start** (`api.examStart`), per-item save (`api.examSave`), **Submit** (`api.examSubmit`). Coding items use the Coding IDE (`api.codingOpen/Run/Submit`).
 - **Data**: `api.examMeta`, `api.examPaper`, `api.examState`; proctoring via `api.proctorStart`, `api.proctorEvent`.
 
-## 9.E LARE Hire - Recruiter
+## 9.E Lityra Hire - Recruiter
 
 ### 9.E.1 Recruiter Drives (`/drive/recruiter/drives`)
 - **Purpose**: list and create drives.
@@ -795,7 +800,7 @@ flowchart LR
   Recruiter(("Recruiter"))
   Verifier(("Employer/Verifier"))
 
-  subgraph Learn["LARE Learn"]
+  subgraph Learn["Lityra Learn"]
     UC1["Learn via curriculum"]
     UC2["Take assessment"]
     UC3["Practice coding"]
@@ -809,7 +814,7 @@ flowchart LR
     UC11["Grade / attendance"]
     UC12["Admin analytics"]
   end
-  subgraph Hire["LARE Hire"]
+  subgraph Hire["Lityra Hire"]
     UC13["Browse / attend drive"]
     UC14["Take proctored exam"]
     UC15["Build question bank"]
@@ -973,7 +978,7 @@ flowchart TB
   subgraph EC2["EC2 (Ubuntu)"]
     NGINX["Nginx :443/:80"]
     GW["Gateway :8000"]
-    S["services :8001..8026"]
+    S["services :8001..8031"]
     NGINX -->|/ static| DIST["/var/www/lare"]
     NGINX -->|/api| GW --> S
   end
@@ -987,7 +992,7 @@ flowchart TB
 # 11. Feature Deep-Dives
 
 ## 11.1 The Cognitive Twin
-A per-learner **skill profile** fused from two evidence streams: **written assessments** and **coding performance**. It maps activity onto four dimensions (communication, coding, aptitude, project) and identifies the **weakest area**, which drives the coach, reviews, and micro-lessons. LARE Hire has an analogous **evaluation twin** built from real drive-exam performance.
+A per-learner **skill profile** fused from two evidence streams: **written assessments** and **coding performance**. It maps activity onto four dimensions (communication, coding, aptitude, project) and identifies the **weakest area**, which drives the coach, reviews, and micro-lessons. Lityra Hire has an analogous **evaluation twin** built from real drive-exam performance.
 
 ## 11.2 Persistent AI coach + nudging
 The coach generates a **study plan** targeting the weakest area, persists it, tracks day-by-day completion, and can **nudge** the learner (in-app + email) with their plan. Regeneration is available on demand.
@@ -1008,7 +1013,7 @@ The twin knows who just mastered a topic and who is a step behind, and pairs the
 After a coding submission, the learner must answer AI-generated questions about **their own** solution - a cheat-resistant check that they understand what they submitted.
 
 ## 11.8 Sovereign Learning Wallet
-A signed, verifiable competence record. Signed with a wallet key (HS256 over the platform secret), it exposes a **public verify page** so an employer can confirm authenticity without an account. Certificates use readable ids (e.g. `LARE-VER-####`).
+A signed, verifiable competence record. Signed with a wallet key (HS256 over the platform secret), it exposes a **public verify page** so an employer can confirm authenticity without an account. Certificates use high-entropy random verification IDs.
 
 ## 11.9 Proctoring & anti-cheat
 Every page where a student submits an answer shows a **ProctorBanner** and reports integrity events (focus/tab/visibility) to the anticheat service, which flags anomalies for the exam session.
@@ -1033,7 +1038,7 @@ Every page where a student submits an answer shows a **ProctorBanner** and repor
 # 13. Deployment & Operations
 
 ## 13.1 Model
-- **One EC2 box** runs Nginx + the gateway + all 26 services (as processes/systemd units); **RDS** hosts PostgreSQL. The SPA is built to static files and served by Nginx; `/api` reverse-proxies to the gateway.
+- **One EC2 box** runs Nginx + the gateway + all 31 services (as processes/systemd units); **RDS** hosts PostgreSQL. The SPA is built to static files and served by Nginx; `/api` reverse-proxies to the gateway.
 - Scale later by moving Redis to ElastiCache and putting multiple EC2 app boxes behind a load balancer (services are stateless).
 
 ## 13.2 First-time setup (summary)
@@ -1056,7 +1061,7 @@ Publishing copies the built `dist` into the Nginx web root (e.g. `/var/www/lare`
 
 ## 13.4 Operational notes learned in production
 - **Python 3.14 compatibility**: pins for `psycopg`, `pydantic`, and `SQLAlchemy` were relaxed to versions shipping 3.14 wheels.
-- **Low-RAM build**: add swap so the Vite build is not OOM-killed; build the SPA before starting the 26 services when RAM is tight.
+- **Low-RAM build**: add swap so the Vite build is not OOM-killed; build the SPA before starting the 31 services when RAM is tight.
 - **Disk**: keep headroom for the venv + node build; grow the EBS volume rather than deleting OS files.
 - **Binary downloads**: exports/PDFs refresh the token like any other call, so they survive an access-token expiry mid-session.
 
@@ -1076,7 +1081,7 @@ Further product directions: richer analytics, deeper AI evaluation, mobile-optim
 
 ## 15.1 Glossary
 - **Cognitive Twin** - a per-learner skill profile fused from assessment + coding data.
-- **Evaluation Twin** - the LARE Hire analogue built from drive-exam performance.
+- **Evaluation Twin** - the Lityra Hire analogue built from drive-exam performance.
 - **Micro-lesson** - an on-demand AI-generated lesson rendered as content blocks.
 - **Adaptive drill** - a practice mode that tunes difficulty in real time.
 - **Practice World** - a stepped, browser-based workplace simulation.
@@ -1097,12 +1102,12 @@ Further product directions: richer analytics, deeper AI evaluation, mobile-optim
 > Security note: demo credentials are for evaluation only. Rotate all secrets (DB, JWT, AI, SMTP, admin) before any public launch.
 
 ## 15.4 Service/port/schema quick reference
-See section 5.2. Ports `8001..8026` for services, `8000` for the gateway; schema = service name (`auth` -> `lare_auth`).
+See section 5.2. Ports `8001..8031` for services, `8000` for the gateway; schema = service name (`auth` -> `lare_auth`).
 
 
 # 16. Data Dictionary — Identity & Learn Services
 
-This appendix documents the real tables and columns for the identity and LARE Learn services (source: each service's `models.py`). Every table uses a string primary key `id` (a generated uuid) unless noted. Timestamps are timezone-aware. `JSON` columns store structured payloads.
+This appendix documents the real tables and columns for the identity and Lityra Learn services (source: each service's `models.py`). Every table uses a string primary key `id` (a generated uuid) unless noted. Timestamps are timezone-aware. `JSON` columns store structured payloads.
 
 ## 16.1 auth (schema: `lare_auth`)
 
@@ -1197,12 +1202,12 @@ This appendix documents the real tables and columns for the identity and LARE Le
 ## 16.9 certification (schema: `lms_certification`)
 
 **templates** — id, year_no (unique), name, signatories, version.
-**certificates** — id, learner_id, year_no, template_id, cert_no (unique), cert_name, **verify_id** (unique, readable e.g. `LARE-VER-####`), file_id, status (issued / revoked), ppo_tag, holder_name, issued_at; unique (learner_id, year_no).
+**certificates** — id, learner_id, year_no, template_id, cert_no (unique), cert_name, **verify_id** (unique, high-entropy random ID), file_id, status (issued / revoked), ppo_tag, holder_name, issued_at; unique (learner_id, year_no).
 **revocations** — id, certificate_id (FK), reason, revoked_by, ts.
 
 ## 16.10 coding (schema: `drive_coding`)
 
-**problems** — id, title, statement, languages (JSON), time_limit_sec, memory_limit_mb, sample_cases (JSON, visible), hidden_cases (JSON, hidden), max_score, **skill**, **difficulty**, **practice** (Boolean — only practice=true problems appear in the LARE Learn practice bank).
+**problems** — id, title, statement, languages (JSON), time_limit_sec, memory_limit_mb, sample_cases (JSON, visible), hidden_cases (JSON, hidden), max_score, **skill**, **difficulty**, **practice** (Boolean — only practice=true problems appear in the Lityra Learn practice bank).
 **coding_sessions** — id, problem_id, candidate_id, exam_session_id, **kind** (exam / practice), language, draft_code, status (open / submitted), updated_at.
 **coding_submissions** — id, coding_session_id, code, score, cases_passed, total_cases, detail (JSON per-hidden-case pass/fail, no expected leaked), submitted_at.
 **coding_vivas** — id, coding_session_id, problem_id, candidate_id, question, answer, score (0..100), passed, verdict, ai_generated, status (asked / graded), created_at.
@@ -1335,7 +1340,7 @@ Response: { "access_token": "eyJ...", "refresh_token": "eyJ...", "token_type": "
 **POST /auth/v1/otp/request** — `{ "email": "..." }` → `{ "sent": true }`. **POST /auth/v1/otp/verify** — `{ "email","code","device" }` → tokens.
 **GET /auth/v1/me** → `{ "id","email","full_name","roles":["student"],"tenant_id":"lare","email_verified":true }`.
 
-## 18.2 LARE Learn — dashboard data
+## 18.2 Lityra Learn — dashboard data
 
 **GET /lms/v1/gamification/{learnerId}**
 ```json
@@ -1346,21 +1351,21 @@ Response: { "learner_id":"lrn_1","total_xp":1840,"level":3,"next_level_at":2000,
 **GET /lms/v1/progress/{learnerId}/scorecard** → `[ { "year_no":2,"communication":72,"coding":84,"aptitude":78,"project":65 } ]`.
 **GET /lms/v1/progress/{learnerId}** → `{ "modules":[{ "module_id":"...","completion_pct":80 }],"year_status":{...} }`.
 
-## 18.3 LARE Learn — curriculum & content
+## 18.3 Lityra Learn — curriculum & content
 
-**GET /lms/v1/curricula** → `[ { "id":"cur_1","name":"LARE 4-Year Programme","version":1,"status":"published" } ]`.
+**GET /lms/v1/curricula** → `[ { "id":"cur_1","name":"Lityra 4-Year Programme","version":1,"status":"published" } ]`.
 **GET /lms/v1/curricula/{id}/tree** → nested `{ "name","status","years":[ { "year_no","theme","modules":[ { "title","branch_scope","lessons":[ { "id","title","objectives":[...] } ] } ] } ] }`.
 **GET /lms/v1/content/playlist?learner_id=…** → `[ { "id","title","type":"video","duration_sec":600,"difficulty":"easy","unlocked":true,"status":"in_progress" } ]`.
 **POST /lms/v1/content/{id}/progress** — `{ "learner_id","position_sec":320,"completed":false }` → `{ "status":"in_progress","position_sec":320 }`.
 
-## 18.4 LARE Learn — assessments & take-flow
+## 18.4 Lityra Learn — assessments & take-flow
 
 **GET /lms/v1/assessments** → `[ { "id","title","type":"quiz","passing_pct":60,"time_limit_min":20,"proctored":true,"shuffle":true } ]`.
 **GET /lms/v1/assessments/{aid}** → `{ "id","title","pass_pct":60,"duration_min":20,"items":[ { "id","type":"mcq","stem","weight":1,"options":[{"id":"a","text":"O(n)"}] } ] }` (answer keys never included).
 **POST /lms/v1/assessments/{aid}/attempts** — `{ "learner_id":"lrn_1" }` → `{ "attempt_id":"att_1","status":"in_progress","started_at":"..." }`.
 **POST /lms/v1/attempts/{attemptId}/submit** — `{ "answers":{ "item_1":{"option":"b"} } }` → `{ "score":8,"max_score":10,"percentage":80,"passed":true }`.
 
-## 18.5 LARE Learn — Cognitive Twin, coach, reviews, careers
+## 18.5 Lityra Learn — Cognitive Twin, coach, reviews, careers
 
 **GET /lms/v1/assessments/twin/{learnerId}** → `{ "learner_id","dimensions":{"coding":72,"aptitude":61,"communication":55,"project":48},"weakest":"project","sources":{"written":..,"coding":..} }`.
 **GET /lms/v1/assessments/coach/{learnerId}?force=1** → `{ "weakest":"aptitude","plan":{"days":[{"day":"Day 1","focus":"...","tasks":[...]}]},"completed_days":["Day 1"] }`.
@@ -1371,7 +1376,7 @@ Response: { "learner_id":"lrn_1","total_xp":1840,"level":3,"next_level_at":2000,
 **GET /lms/v1/careers** → `[ { "id","title":"Data Analyst","required_skills":[{"name":"SQL","weight":2}] } ]`.
 **GET /lms/v1/careers/readiness/{learnerId}** → `[ { "role":"Data Analyst","readiness":68,"gaps":["Statistics"] } ]`.
 
-## 18.6 LARE Learn — practice, drill, worlds, mesh, lessons, wallet
+## 18.6 Lityra Learn — practice, drill, worlds, mesh, lessons, wallet
 
 **GET /lms/v1/practice/problems?skill=Arrays** → `[ { "id","title","skill":"Arrays","difficulty":"easy","languages":["python","java"] } ]`.
 **POST /lms/v1/practice/session** — `{ "problem_id","language":"python" }` → `{ "session_id","starter":"...","sample_cases":[{"input","expected"}] }`.
@@ -1391,31 +1396,31 @@ Response: { "learner_id":"lrn_1","total_xp":1840,"level":3,"next_level_at":2000,
 **POST /lms/v1/micro-lessons/{learnerId}/generate** — `{ "topic":"SQL Joins","force":false }` → `{ "id","topic","lesson":{"blocks":[{"type":"text","html":"..."},{"type":"code","language":"sql","code":"..."}]},"generated":true }`.
 **GET /lms/v1/micro-lessons/{learnerId}** → `[ { "id","topic","created_at" } ]`.
 **POST /lms/v1/micro-lessons/author-blocks** — `{ "topic":"SQL Joins" }` → `{ "blocks":[ ... ] }` (for Curriculum Studio insert).
-**GET /lms/v1/wallet/{learnerId}** → `{ "verify_id":"LARE-W-8F2A","subject_name":"Asha Rao","payload":{"claims":[...]},"revoked":false,"issued_at":"..." }`.
+**GET /lms/v1/wallet/{learnerId}** → `{ "verify_id":"random-wallet-reference","subject_name":"Asha Rao","payload":{"claims":[...]},"revoked":false,"issued_at":"..." }`.
 **POST /lms/v1/wallet/{learnerId}/issue** → the wallet object above (re-issue refreshes in place).
 **GET /verify/wallet/{verifyId}** (public) → `{ "valid":true,"subject_name","issued_at","claims":[...] }`.
 
-## 18.7 LARE Learn — certification & authoring
+## 18.7 Lityra Learn — certification & authoring
 
-**GET /lms/v1/certificates/for/{learnerId}** → `[ { "id","year_no":1,"cert_name":"Foundation","cert_no":"LARE-Y1-000042","status":"issued","verify_id":"LARE-VER-0042","ppo_tag":false,"holder_name":"Asha Rao","issued_at":"..." } ]`.
+**GET /lms/v1/certificates/for/{learnerId}** → `[ { "id","year_no":1,"cert_name":"Foundation","cert_no":"LITYRA-Y1-000042","status":"issued","verify_id":"random-certificate-reference","ppo_tag":false,"holder_name":"Asha Rao","issued_at":"..." } ]`.
 **GET /lms/v1/certificates/{id}/pdf** → binary PDF (Content-Disposition attachment).
 **GET /verify/{verifyId}** (public) → `{ "valid":true,"holder_name","cert_name","issued_at","cert_no" }`.
 **POST /lms/v1/lessons/{lid}/content** — `{ "content":[ {"type":"text","html":"..."}, {"type":"check","question":"...","options":[...],"answer":"a"} ] }` → `{ "id","content":[...] }`.
 **POST /lms/v1/lessons/{lid}/check** — `{ "block_id","choice":"a" }` → `{ "correct":true,"explain":"..." }` (also records practice into the review schedule).
 **POST /lms/v1/learners/import** — `{ "college_id","rows":[{"roll_no","full_name","email","branch"}] }` → `{ "import_id","status":"previewed","summary":{"new":30,"dupes":0} }`.
 
-## 18.8 LARE Hire — candidate & drives
+## 18.8 Lityra Hire — candidate & drives
 
 **GET /drive/v1/drives?status=open** → `[ { "id","company_name","title","status":"open","venue","reporting_time" } ]`.
 **GET /drive/v1/drives/{id}** → `{ "id","company_name","title","status","roles":[{"id","title","ctc","positions"}],"rounds":[{"id","order","type"}] }`.
-**POST /drive/v1/attend** (public) — `{ "drive_code","first_name","last_name","roll_number","email","phone","branch","cgpa" }` → `{ "student_id":"S-4821","drive":{...},"access_token","refresh_token" }`.
+**POST /drive/v1/attend** (public) — `{ "first_name","last_name","roll_number","email","phone" }` → `{ "student_id","full_name","email","roll_number","drive":{...} }`; sends a Hire email OTP, no tokens. **POST /drive/v1/attend/resume** takes `{ "student_id","email" }` and requests an OTP. After OTP sign-in, **POST /drive/v1/attend/complete** finalizes drive registration.
 **POST /drive/v1/candidate/apply** — `{ "drive_id","drive_role_id" }` → `{ "application_id","status":"applied" }`.
 **GET /drive/v1/candidate/profile** → `{ "full_name","email","phone","branch","cgpa","completeness":100,"education":[...],"skills":[...],"projects":[...] }`.
 **PUT /drive/v1/candidate/profile** — `{ "full_name","email","phone","branch","cgpa" }` → updated profile.
 **GET /drive/v1/opportunities?candidate_id=…** → `[ { "drive_id","title","company_name","role":"SWE","match_pct":82,"matched_skills":["Python","SQL"] } ]`.
 **GET /drive/v1/evaluations/twin/{candidateId}** → `{ "candidate_id","verified_skills":[{"skill":"DSA","level":"strong","evidence":"drive-exam"}] }`.
 
-## 18.9 LARE Hire — exam take-flow, coding, proctoring
+## 18.9 Lityra Hire — exam take-flow, coding, proctoring
 
 **GET /drive/v1/exams/{examId}** → `{ "id","title","total_time_min":60,"nav_rule":"free","sections":[{"id","title","time_limit_min"}] }`.
 **GET /drive/v1/exams/{examId}/paper** → `{ "sections":[{ "id","title","questions":[{"id","type","stem","options":[{"id","text"}],"weight"}] }] }` (no answer keys).
@@ -1430,7 +1435,7 @@ Response: { "learner_id":"lrn_1","total_xp":1840,"level":3,"next_level_at":2000,
 **POST /drive/v1/proctor/start** — `{ "exam_session_id","candidate_id","drive_id","fingerprint","browser" }` → `{ "proctor_session_id","status":"active" }`.
 **POST /drive/v1/proctor/{examSessionId}/events** — `{ "type":"tab_switch","meta":{"count":1} }` → `{ "violation_score":1,"status":"active" }` (auto_submitted at threshold).
 
-## 18.10 LARE Hire — recruiter management
+## 18.10 Lityra Hire — recruiter management
 
 **POST /drive/v1/drives** — `{ "company_name","title","venue","reporting_time" }` → `{ "id","status":"draft" }`.
 **POST /drive/v1/drives/{id}/roles** — `{ "title","ctc","positions","skills":[{"name","weight"}] }` → role.
@@ -1464,13 +1469,13 @@ Response: { "learner_id":"lrn_1","total_xp":1840,"level":3,"next_level_at":2000,
 
 
 
-# 19. Detailed Screen Reference — LARE Learn (Part 1)
+# 19. Detailed Screen Reference — Lityra Learn (Part 1)
 
 This section documents selected screens at element level (source: the page components). Each screen lists its phases/states, every interactive control, and the exact API calls and side effects.
 
 ## 19.1 Assessments (`/lms/assessments`)
 
-A three-phase take-flow: **intro → taking → done**. Proctored assessments enforce fullscreen + anti-cheat with a **5-warning auto-submit** (the same engine as LARE Hire exams; `VIOLATION_LIMIT = 5`).
+A three-phase take-flow: **intro → taking → done**. Proctored assessments enforce fullscreen + anti-cheat with a **5-warning auto-submit** (the same engine as Lityra Hire exams; `VIOLATION_LIMIT = 5`).
 
 **Phase `intro`**
 - On mount, `GET /lms/v1/assessments` populates the card grid; if empty, a sample card is shown with the note *"your trainer's published assessments will appear here."*
@@ -1546,7 +1551,7 @@ The **Cognitive Twin** visualised. Reusable: a student sees their own; a recruit
 
 
 
-# 20. Detailed Screen Reference — LARE Learn (Part 2)
+# 20. Detailed Screen Reference — Lityra Learn (Part 2)
 
 ## 20.1 Coding Practice (`/lms/practice`)
 
@@ -1602,7 +1607,7 @@ The Sovereign Learning Wallet — a signed, publicly verifiable competence recor
 
 - `GET /lms/v1/wallet/{id}` loads the credential (or the empty state).
 - **Empty state** — "Create your verified wallet" with an **Issue my wallet** button → `POST /lms/v1/wallet/{id}/issue`.
-- **Credential card** — "LARE Verified Competence", subject name, issued date + issuer, and a big **overall mastery %**. Metrics: Assessments, Problems solved, **Verified (viva)**. Chips for **Proven strengths** and **Viva-verified coding**. A "Closest career fit" line.
+- **Credential card** — "Lityra Verified Competence", subject name, issued date + issuer, and a big **overall mastery %**. Metrics: Assessments, Problems solved, **Verified (viva)**. Chips for **Proven strengths** and **Viva-verified coding**. A "Closest career fit" line.
 - **Share & verify card** — the public **verify URL** (`/verify/wallet/{verify_id}`) with:
   - **Copy** (copies the link), **Open** (opens the public page).
   - **Download PDF** → `GET /lms/v1/wallet/{id}/export.pdf`. **Download JSON** (client-side blob). **Refresh** → re-issue in place (a shared verify link keeps working). **Revoke** → `POST /lms/v1/wallet/{id}/revoke`.
@@ -1610,7 +1615,7 @@ The Sovereign Learning Wallet — a signed, publicly verifiable competence recor
 
 
 
-# 21. Detailed Screen Reference — LARE Hire
+# 21. Detailed Screen Reference — Lityra Hire
 
 ## 21.1 Exam Portal (`/drive/test/:examId`)
 
@@ -1723,7 +1728,7 @@ Roster, attendance, grading, progress.
 ## 22.7 Certificates (`/lms/certificates`)
 
 - Loads `GET /lms/v1/certificates/for/{id}`. Each issued certificate shows year, name, cert no, status, and a PPO tag.
-- **View** — opens a **modal** rendering the certificate (holder name, credential, issued date, verify id `LARE-VER-####`).
+- **View** — opens a **modal** rendering the certificate (holder name, credential, issued date, and random verification ID).
 - **Print** — the browser print dialog for the certificate.
 - **Download PDF** — `GET /lms/v1/certificates/{id}/pdf`.
 - **Verify certificate** — opens the public verify page (`/verify/{verifyId}`) which asks for / accepts the readable id and renders the verified certificate.
@@ -1741,7 +1746,7 @@ Roster, attendance, grading, progress.
 ## 22.10 Authentication & public pages
 
 - **Landing** (`/`), **Login** (`/login`), **Register** (`/register`), **Forgot Password** (`/forgot-password`) — see section 9.A. **AuthLayout** frames them (brand panel + form).
-- **App Chooser** (`/apps`) — choose LARE Learn or LARE Hire (role-filtered).
+- **App Chooser** (`/apps`) — choose Lityra Learn or Lityra Hire (role-filtered).
 - **Attend Drive** (`/drive/attend`) — public, no-login attend + resume.
 - **Wallet Verify** (`/verify/wallet/:verifyId`) and **Certificate Verify** (`/verify/:verifyId`) — public verification (no auth).
 
@@ -1812,7 +1817,7 @@ Loads `GET /lms/v1/certificates/for/{id}`.
   - **Download PDF** (when the cert has an id) → `GET /lms/v1/certificates/{id}/pdf`.
   - **Public verify** → opens `/verify/{verify_id}` in a new tab.
   - **Close** (X).
-- **Verify a certificate widget** (side panel, also public-capable) — a **verify-id input** (e.g. `LARE-VER-4821`) + **Verify** → `GET /verify/{verifyId}`. On success it opens the **same certificate modal with an "Authentic — verified by LARE Learn" banner**; on failure it shows "not valid / not found".
+- **Verify a certificate widget** (side panel, also public-capable) — a **verify-id input** + **Verify** → `GET /verify/{verifyId}`. On success it opens the **same certificate modal with an "Authentic — verified by Lityra Learn" banner**; on failure it shows "not valid / not found".
 - Empty state when no certificates ("auto-issues on completing a year").
 
 
@@ -1844,7 +1849,7 @@ Four panels: **My learners**, **Career targets**, **Create an assessment**, **Gr
 
 ## 24.2 Candidate Drives (`/drive`) — every control
 
-Student view of LARE Hire (students register via the public Attend flow, so there's no per-drive apply here).
+Student view of Lityra Hire (students register via the public Attend flow, so there's no per-drive apply here).
 - Loads `GET /drive/v1/drives?status=open`; for each drive, loads its exams (`GET /drive/v1/exams?drive_id=…`).
 - **Drive card** — building icon, status badge, title, company, venue, reporting time.
 - **Assessment rows** — title + "N sections · M min" and a **Start** button (amber) → navigates to `/drive/test/{examId}` (the Exam Portal). If no exam is scheduled, a "check back soon" note shows.
@@ -1887,17 +1892,17 @@ Two cards: **Notification preferences** and **Account**.
 - **Send reset link** → `POST /auth/v1/password/forgot { email }`. With a token, **Reset password** → `POST /auth/v1/password/reset { token, new_password }`. Link back to **Sign in**.
 
 ## 25.4 App Chooser (`/apps`)
-- **Header** — the LARE **Logo**, the user's name/email, and a **Sign out** button → `useAuth().logout()` then `/login`.
+- **Header** — the Lityra **Logo**, the user's name/email, and a **Sign out** button → `useAuth().logout()` then `/login`.
 - **Two app cards** (the products never mix on screen):
-  - **LARE Learn** → navigates to `/lms` ("Four years. One platform. Career-ready.").
-  - **LARE Hire** → navigates to `/drive` ("Find the right talent, faster.").
+  - **Lityra Learn** → navigates to `/lms` ("Four years. One platform. Career-ready.").
+  - **Lityra Hire** → navigates to `/drive` ("Find the right talent, faster.").
 
 ## 25.5 Attend Drive (`/drive/attend`) — public
 - A public, no-login form for walk-in campus drives: drive code + the student's own details.
-- **Button: Attend** → `POST /drive/v1/attend` (issues a Student ID + a scoped session, returns access/refresh tokens). **Button/flow: Resume** → `POST /drive/v1/attend/resume { student_id }`.
+- **Button: Attend** → `POST /drive/v1/attend` (creates a pending registration and sends an email OTP). After OTP sign-in, `/drive/v1/attend/complete` finalizes registration. **Resume** → `POST /drive/v1/attend/resume { student_id, email }` requests an OTP; the Student ID alone never grants a session.
 
 ## 25.6 Matched Opportunities (`/drive/opportunities`)
-LARE Hire Skills-to-Opportunity — ranks **open drives** by how well the candidate's drive-exam skills fit each role (Hire data only).
+Lityra Hire Skills-to-Opportunity — ranks **open drives** by how well the candidate's drive-exam skills fit each role (Hire data only).
 - `GET /drive/v1/opportunities` → `{ matches, unspecified, has_skill_data }`.
 - A hint card shows when there's no skill data yet ("take part in a drive's tests…").
 - **Match card** (per drive) — title, company · reporting time · venue, a large **match %** (teal ≥75 / amber ≥45 / rose below) with a bar, role chips (title · CTC), and two columns: **Your matching skills** (name + mastery) and **Skills to build** (name + mastery). "You meet every required skill!" when none missing.
@@ -1907,20 +1912,20 @@ LARE Hire Skills-to-Opportunity — ranks **open drives** by how well the candid
 
 ## 25.7 Certificate Verify (`/verify/:verifyId`) — public
 - Loads `GET /verify/{verifyId}` (no auth). States: **Verifying…**, **Authentic** (a teal banner + a **Print** button + the rendered certificate artwork via `certificateHtml`), or **Could not verify** (not found / invalid / revoked).
-- Header shows the LARE **Logo**; footer links back to `/`.
+- Header shows the Lityra **Logo**; footer links back to `/`.
 
 ## 25.8 Wallet Verify (`/verify/wallet/:verifyId`) — public
 - Loads `GET /verify/wallet/{verifyId}` (no auth). Shows the signature-verified status, subject name, issued date, and the competence claims. No login required — an employer can confirm authenticity directly.
 
 ## 25.9 Landing (`/`)
-- Public marketing entry: hero + product highlights for LARE Learn and LARE Hire.
+- Public marketing entry: hero + product highlights for Lityra Learn and Lityra Hire.
 - **Buttons: Log in** (→ `/login`) and **Get started / Register** (→ `/register`).
 
 
 
 # 26. Non-Functional Requirements
 
-| Attribute | Approach in LARE |
+| Attribute | Approach in Lityra |
 |---|---|
 | **Performance** | Stateless services behind a gateway; per-service schemas keep queries local; the SPA loads a single hashed bundle and calls `/api` with `cache: no-store` for per-user safety. AI/code-exec routes are marked **slow** so the gateway grants extended timeouts. |
 | **Scalability** | Horizontal: services are stateless (session state is in signed tokens), so app boxes scale behind a load balancer. The event bus moves to Redis Streams/ElastiCache; hot paths (exam, coding) get more workers. Data scales via the managed RDS instance class + read replicas. |
@@ -1935,7 +1940,7 @@ LARE Hire Skills-to-Opportunity — ranks **open drives** by how well the candid
 # 27. AI Integration Specification
 
 ## 27.1 Providers & routing
-- **LARE Learn** uses **Google Gemini** (`AI_PROVIDER=gemini`, `GEMINI_API_KEY`, `GEMINI_MODEL`); **LARE Hire** uses **Mistral** (`DRIVE_AI_PROVIDER=mistral`, `MISTRAL_API_KEY`). A common client (`lare_common.ai.build_client_from_env`) selects the provider and returns a **stub** when no key is configured (so features degrade to deterministic fallbacks instead of failing).
+- **Lityra Learn** uses **Google Gemini** (`AI_PROVIDER=gemini`, `GEMINI_API_KEY`, `GEMINI_MODEL`); **Lityra Hire** uses **Mistral** (`DRIVE_AI_PROVIDER=mistral`, `MISTRAL_API_KEY`). A common client (`lare_common.ai.build_client_from_env`) selects the provider and returns a **stub** when no key is configured (so features degrade to deterministic fallbacks instead of failing).
 
 ## 27.2 Governance (AI Orchestration)
 - Every governed AI call is **audited** in `ai_calls` (prompt key, purpose, actor, model, mode live/stub, input/output tokens, latency, status, preview). This gives per-call usage, latency, and cost visibility and enforces a token budget (`AI_MAX_TOKENS`).
@@ -1950,7 +1955,7 @@ LARE Hire Skills-to-Opportunity — ranks **open drives** by how well the candid
 - **Practice Worlds** — scenario content.
 
 ## 27.4 Robust generation (the marker format)
-LLMs frequently break strict JSON when a lesson contains code blocks and tables. LARE therefore generates lessons in a **`@@`-marker format** parsed by a deterministic parser into blocks (`text`, `code`, `callout`, `check`). Transient provider errors (e.g. 503 "high demand") **retry**, and a `transient` flag ensures a generic fallback template is **never persisted** as if it were a real lesson. The same block format powers author-side generation (`author-blocks`).
+LLMs frequently break strict JSON when a lesson contains code blocks and tables. Lityra therefore generates lessons in a **`@@`-marker format** parsed by a deterministic parser into blocks (`text`, `code`, `callout`, `check`). Transient provider errors (e.g. 503 "high demand") **retry**, and a `transient` flag ensures a generic fallback template is **never persisted** as if it were a real lesson. The same block format powers author-side generation (`author-blocks`).
 
 ## 27.5 Failure behaviour
 - On provider quota/error, the server returns the **specific reason** (surfaced verbatim in the UI, e.g. Question Bank AI generation). Where a deterministic fallback exists (coach "smart plan", tutor offline reply), it is clearly badged as non-AI so it is never mistaken for live output.
@@ -1993,14 +1998,14 @@ Every surface where a student submits an answer shows a **ProctorBanner**: LMS a
 - Redeploy: `./redeploy.sh` (pull → restart backend → rebuild + publish SPA). Flags: `FRONTEND_ONLY`, `BACKEND_ONLY`, `DEPS`, `WEB_ROOT`. `npm ci` auto-runs if `node_modules` is missing. **Publishing must copy `dist` into the nginx root** — building alone doesn't update what nginx serves.
 
 ## 30.2 Start / stop / health
-- `./run-all.sh` starts the gateway + 26 services (loads `.env`, sets `DB_SCHEMA` per service, runs `init-db`, serves). `./stop-all.sh` (or `pkill -f "manage.py serve"`) stops them.
-- Health: `curl http://127.0.0.1:8000/health`; scan all ports 8000–8026; each `/health` returns `{status:"ok"}`.
+- `./run-all.sh` starts the gateway + 31 services (loads `.env`, sets `DB_SCHEMA` per service, runs `init-db`, serves). `./stop-all.sh` (or `pkill -f "manage.py serve"`) stops them.
+- Health: `curl http://127.0.0.1:8000/health`; scan all ports 8000–8031; each `/health` returns `{status:"ok"}`.
 
 ## 30.3 Backups & DR
 - RDS automated backups + PITR. Keep `.env` and the JWT PEMs in a secrets store, not only on the box. The wallet/certificate verify ids are stable so shared links survive re-issue.
 
 ## 30.4 Scaling
-- Grow the EBS disk before it fills (venv + node build need headroom). Add swap on low-RAM boxes so the Vite build isn't OOM-killed; build the SPA before starting the 26 services when RAM is tight. Move Redis to ElastiCache; put multiple app boxes behind a load balancer; give exam + coding more workers.
+- Grow the EBS disk before it fills (venv + node build need headroom). Add swap on low-RAM boxes so the Vite build isn't OOM-killed; build the SPA before starting the 31 services when RAM is tight. Move Redis to ElastiCache; put multiple app boxes behind a load balancer; give exam + coding more workers.
 
 ## 30.5 Known operational lessons (captured in production)
 - **Python 3.14**: relax pins for `psycopg`, `pydantic` (≥2.13.4), and `SQLAlchemy` (≥2.0.43) to versions shipping 3.14 wheels.
@@ -2140,7 +2145,7 @@ This appendix types the request and response fields for each endpoint (grounded 
 **PUT /candidate/profile** — Req `{ full_name:str, email:str, phone:str, branch:str, cgpa:float }` · Res profile
 **POST /candidate/apply** — Req `{ drive_id:str, drive_role_id:str }` · Res `{ application_id:str, status:"applied" }`
 **GET /opportunities?candidate_id=** — Res `{ has_skill_data:bool, matches:[ { drive_id:str, title:str, company_name:str, venue:str, reporting_time:str, match_pct:int, roles:[ { id:str, title:str, ctc:str } ], matched:[ { name:str, mastery:int } ], missing:[ { name:str, mastery:int } ] } ], unspecified:[ { drive_id:str, title:str, company_name:str } ] }`
-**POST /attend** (public) — Req `{ drive_code:str, first_name:str, last_name:str, roll_number:str, email:str, phone:str, branch:str, cgpa:float }` · Res `{ student_id:str, drive:json, access_token:str, refresh_token:str }`
+**POST /drive/v1/attend** (public) — Req `{ first_name:str, last_name:str, roll_number:str, email:str, phone:str }` · Res `{ student_id:str, full_name:str, email:str, roll_number:str, drive:json }`; email OTP required before login.
 
 ## 31.9 Exam, coding, proctoring (`/drive/v1`)
 
@@ -2201,4 +2206,4 @@ This appendix types the request and response fields for each endpoint (grounded 
 
 ---
 
-*End of document. Prepared for LARE Cloud Solutions - a unit of LARE Consulting & Technology Pvt. Ltd.*
+*End of document. Prepared for GenZify - Engineering Human Potential Through Technology*

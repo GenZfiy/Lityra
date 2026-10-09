@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -8,7 +9,7 @@ import { PageHeader, Loading } from "../components/ui/states.jsx";
 import { api } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 
-// LARE Learn — Lifelong Reinforcement (Sustain). Surfaces skills whose retention
+// Lityra Learn — Lifelong Reinforcement (Sustain). Surfaces skills whose retention
 // is decaying and lets the learner do a quick self-check that reschedules them
 // on a forgetting curve. Knowledge kept as a living state, not certified-and-lost.
 export default function KeepSharp() {
@@ -46,13 +47,13 @@ export default function KeepSharp() {
     } finally { setBusy(""); }
   }
 
-  if (loading) return <Loading />;
+  if (loading) return <Loading label="Loading review reminders…" />;
 
   const due = data?.due || [];
   const upcoming = data?.upcoming || [];
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-keep-sharp"><div>
       <PageHeader
         title="Keep Sharp"
         subtitle="What you learn fades unless you revisit it. These are the skills slipping the most — a 20-second check keeps each one alive."
@@ -76,7 +77,7 @@ export default function KeepSharp() {
           </p>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="memory-review-queue space-y-3" aria-label="Skills due for review">
           <p className="text-sm text-slate-500 flex items-center gap-2">
             <AlertTriangle size={15} className="text-amber-500" />
             {due.length} skill{due.length > 1 ? "s" : ""} due for review — weakest memory first.
@@ -88,8 +89,8 @@ export default function KeepSharp() {
       )}
 
       {upcoming.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Coming up</h3>
+        <div className="memory-next-up mt-8" aria-labelledby="memory-next-title">
+          <h3 id="memory-next-title" className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Coming up</h3>
           <Card className="p-5">
             <div className="space-y-2.5">
               {upcoming.map((u) => (
@@ -107,7 +108,7 @@ export default function KeepSharp() {
           </Card>
         </div>
       )}
-    </div>
+    </div></div>
   );
 }
 

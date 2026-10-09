@@ -98,11 +98,10 @@ def _deliver(purpose: str, to: str, secret: str) -> None:
 
 
 # ---- OTP (passwordless / step-up) ----
-@bp.post("/internal/drive-token")
-def drive_token():
-    # Internal-only: the Drive candidate service provisions a passwordless student
-    # identity and gets platform tokens back. Authenticated by the service token,
-    # never publicly reachable (the Gateway has no /auth/v1/internal public route).
+@bp.post("/internal/drive-user")
+def provision_drive_user():
+    # Internal-only: create a passwordless Hire identity, but do not issue a
+    # session. Public registration must first verify control of the email by OTP.
     try:
         verify_service_token(request.headers.get("X-Internal-Token", ""))
     except Exception as e:  # noqa: BLE001
@@ -112,7 +111,7 @@ def drive_token():
     if not email:
         raise BadRequest("email required", code="email_required")
     with _db().session() as s:
-        return ok(_svc().mint_drive_token(s, email, body.get("full_name")))
+        return ok(_svc().provision_drive_user(s, email, body.get("full_name")))
 
 
 @bp.post("/otp/request")

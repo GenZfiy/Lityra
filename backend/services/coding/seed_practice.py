@@ -1,4 +1,4 @@
-"""Seed the LARE Learn coding-practice bank with real, language-agnostic
+"""Seed the Lityra Learn coding-practice bank with real, language-agnostic
 problems (stdin -> stdout, so any of the sandbox languages works). Every
 problem is flagged practice=True so it appears only in the LMS practice bank,
 never in Drive exams.
@@ -138,7 +138,7 @@ def main():
     print("Practice bank seeded: {} created, {} updated ({} problems).".format(
         created, updated, len(BANK)))
     print("Skills:", ", ".join(sorted({b[1] for b in BANK})))
-    print("These appear in LARE Learn -> Practice. Solve them to grow your Skill Map.")
+    print("These appear in Lityra Learn -> Practice. Solve them to grow your Skill Map.")
 
 
 if __name__ == "__main__":

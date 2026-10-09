@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Wand2, RefreshCw, ChevronRight, Brain } from "lucide-react";
@@ -24,7 +25,7 @@ function toBlocks(lesson) {
   return b;
 }
 
-// LARE Learn — Generative Learning Fabric. Type any concept and the AI writes a
+// Lityra Learn — Generative Learning Fabric. Type any concept and the AI writes a
 // detailed, spoon-fed lesson: text (with tables/examples), runnable code,
 // callouts and checks — the same rich block format as curriculum lessons.
 export default function Lessons() {
@@ -58,20 +59,20 @@ export default function Lessons() {
     finally { setBusy(false); }
   }
 
-  if (loading) return <Loading />;
+  if (loading) return <Loading label="Loading your lesson workspace…" />;
 
   const lesson = current?.lesson || {};
   const blocks = toBlocks(lesson);
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-micro-lessons"><div>
       <PageHeader
         title="Micro-Lessons"
         subtitle="Name a concept and get a complete, spoon-fed lesson right now — explanations with tables and examples, runnable code, and checks."
         right={<Button as={Link} to="/lms/skill-map" variant="secondary"><Brain size={16} /> Skill Map</Button>}
       />
 
-      <Card className="p-6 mb-6">
+      <Card className="lesson-prompt-console p-6 mb-6">
         <div className="flex flex-wrap gap-2 items-center">
           <div className="flex-1 min-w-[220px] flex gap-2">
             <Input value={input} onChange={(e) => setInput(e.target.value)}
@@ -94,7 +95,7 @@ export default function Lessons() {
         {err && <p className="mt-3 text-sm text-amber-600">{err}</p>}
       </Card>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="lesson-studio-grid grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           {blocks.length === 0 ? (
             <Card className="p-10 text-center">
@@ -103,7 +104,7 @@ export default function Lessons() {
               <p className="mt-1 text-slate-500 max-w-md mx-auto">Type any topic above or tap a focus area — your full lesson appears here in seconds.</p>
             </Card>
           ) : (
-            <div className="max-w-2xl">
+            <div className="generated-lesson-article max-w-2xl">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-2xl font-bold text-ink-900">{lesson.title}</h2>
                 <div className="flex items-center gap-2">
@@ -135,6 +136,6 @@ export default function Lessons() {
           </Card>
         </div>
       </div>
-    </div>
+    </div></div>
   );
 }

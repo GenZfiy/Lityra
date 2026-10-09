@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, Send, CalendarRange, Compass, Bot, User, Loader2 } from "lucide-react";
 import { Card, Badge, Button } from "../components/ui/primitives.jsx";
@@ -53,13 +54,13 @@ export default function Tutor() {
   }
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-tutor"><div>
       <PageHeader
         title="AI Tutor"
         subtitle="Grounded guidance for your placement journey"
         right={mode && <Badge tone={mode === "live" ? "teal" : "amber"}>{mode === "live" ? "live AI" : mode}</Badge>}
       />
-      <Card className="flex flex-col h-[calc(100vh-220px)] min-h-[420px] overflow-hidden">
+      <section className="tutor-conversation-shell flex flex-col h-[calc(100vh-220px)] min-h-[420px] overflow-hidden">
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {messages.map((m, i) => (
             <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
@@ -101,7 +102,7 @@ export default function Tutor() {
             <Button type="submit" disabled={busy || !input.trim()}><Send size={16} /></Button>
           </form>
         </div>
-      </Card>
-    </div>
+      </section>
+    </div></div>
   );
 }

@@ -105,7 +105,7 @@ class DriveService:
         d.status = "open"
         return d
 
-    # ---------- Skills-to-Opportunity match (LARE Hire) ----------
+    # ---------- Skills-to-Opportunity match (Lityra Hire) ----------
     def _candidate_skill_map(self, candidate_id: str) -> dict[str, float]:
         """name(lower) -> mastery, from the candidate's Hire skill twin (their
         drive-exam performance). Best-effort: no twin data → empty map → every

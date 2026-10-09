@@ -105,7 +105,7 @@ def result(sid):
 
 
 # ---------------------------------------------------------------------------
-# LARE Learn — coding practice (feeds the Cognitive Twin / skill map).
+# Lityra Learn — coding practice (feeds the Cognitive Twin / skill map).
 # Same sandbox engine as Drive coding rounds, but a separate, student-facing
 # surface that records per-learner skill progress. Product-separated by URL.
 # ---------------------------------------------------------------------------

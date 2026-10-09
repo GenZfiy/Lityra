@@ -33,7 +33,7 @@ export const demoLeaderboard = [
 ];
 
 export const demoCurriculum = {
-  name: "LARE 4-Year Programme",
+  name: "Lityra 4-Year Programme",
   status: "published",
   years: [
     {
@@ -68,11 +68,11 @@ export const demoPlaylist = [
 ];
 
 export const demoCertificates = [
-  { year_no: 1, certificate: "Foundation & Personality Development", status: "issued", cert_no: "LARE-Y1-000042", ppo_tag: false, verify_id: "demo1" },
+  { year_no: 1, certificate: "Foundation & Personality Development", status: "issued", cert_no: "LITYRA-Y1-000042", ppo_tag: false, verify_id: "demo1" },
 ];
 
 export const demoDrives = [
-  { id: "d1", company_name: "Lare Consulting & Technologies Pvt. Ltd.", title: "SWE Intern Drive 2027", status: "open", venue: "Aditya College", reporting_time: "9:00 AM" },
+  { id: "d1", company_name: "GenZify", title: "SWE Intern Drive 2027", status: "open", venue: "Aditya College", reporting_time: "9:00 AM" },
   { id: "d2", company_name: "TCS", title: "NQT Recruitment", status: "open", venue: "Online", reporting_time: "10:00 AM" },
 ];
 
@@ -121,13 +121,13 @@ export const demoProfile = {
 };
 
 export const demoRecruiterDrives = [
-  { id: "d1", company_name: "Lare Consulting & Technologies Pvt. Ltd.", title: "SWE Intern Drive 2027", status: "open", venue: "Aditya College", reporting_time: "9:00 AM" },
+  { id: "d1", company_name: "GenZify", title: "SWE Intern Drive 2027", status: "open", venue: "Aditya College", reporting_time: "9:00 AM" },
   { id: "d2", company_name: "TCS", title: "NQT Recruitment", status: "draft", venue: "Online", reporting_time: "10:00 AM" },
 ];
 
 export const demoDriveDetail = {
   id: "d1",
-  company_name: "Lare Consulting & Technologies Pvt. Ltd.",
+  company_name: "GenZify",
   title: "SWE Intern Drive 2027",
   status: "open",
   venue: "Aditya College",
@@ -203,6 +203,6 @@ export const demoAssessment = {
 };
 
 export const demoTutorGreeting =
-  "Hi! I'm your LARE Tutor. Ask me anything about DSA, aptitude, interviews, or your study plan.";
+  "Hi! I'm your Lityra Tutor. Ask me anything about DSA, aptitude, interviews, or your study plan.";
 
 export const DEMO_LEARNER_ID = "learner-1";

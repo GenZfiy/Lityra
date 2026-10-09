@@ -1,6 +1,7 @@
+import "../../styles/institution-operations-pages.css";
 import { useState } from "react";
-import { Building2, Users, GraduationCap, CheckCircle2, Upload, Plus, ShieldCheck } from "lucide-react";
-import { Card, Badge, Button, Field, Input, StatTile } from "../../components/ui/primitives.jsx";
+import { CheckCircle2, Upload, Plus, ShieldCheck } from "lucide-react";
+import { Card, Badge, Button, Field, Input } from "../../components/ui/primitives.jsx";
 import { PageHeader, Loading, DataSource, EmptyState } from "../../components/ui/states.jsx";
 import { useAsync } from "../../hooks/useAsync.js";
 import { api, withFallback } from "../../lib/api.js";
@@ -24,24 +25,29 @@ export default function AdminConsole() {
   const totalVerified = r ? r.verified : null;
 
   return (
-    <div>
+    <div className="page-composition page-composition-institution institution-ops institution-ops-overview"><div>
       <PageHeader
         title="Institution Console"
         subtitle="Manage colleges, onboard learners, and track readiness"
         right={<DataSource live={colleges.live} />}
       />
 
-      <div className="grid sm:grid-cols-3 gap-4 mb-6">
-        <StatTile icon={Building2} label="Colleges" value={(colleges.data || []).length || "—"} tone="brand" />
-        <StatTile icon={Users} label="Learners" value={totalLearners != null ? totalLearners.toLocaleString() : "—"} tone="teal" />
-        <StatTile icon={ShieldCheck} label="Verified"
-          value={totalVerified != null && totalLearners ? `${Math.round((totalVerified / totalLearners) * 100)}%` : "—"} tone="amber" />
-      </div>
+      <section className="institution-brief" aria-label="Institution overview">
+        <div className="institution-brief-copy"><span>THE LEARNING NETWORK</span><h2>Institution overview</h2><p>Manage the learning network, roster and verified records in your access scope.</p></div>
+        <dl className="institution-brief-metrics">
+          <div><dt>Colleges</dt><dd>{(colleges.data || []).length || "—"}</dd></div>
+          <div><dt>Learners</dt><dd>{totalLearners != null ? totalLearners.toLocaleString() : "—"}</dd></div>
+          <div><dt>Verified</dt><dd>{totalVerified != null && totalLearners ? `${Math.round((totalVerified / totalLearners) * 100)}%` : "—"}</dd></div>
+        </dl>
+      </section>
 
-      <div className="flex gap-2 mb-5">
+      <div className="institution-console-tabs flex gap-2 mb-5" role="tablist" aria-label="Institution views">
         {["overview", "learners"].map((t) => (
           <button
             key={t}
+            type="button"
+            role="tab"
+            aria-selected={tab === t}
             onClick={() => setTab(t)}
             className={`h-9 px-4 rounded-md text-sm font-medium capitalize transition-colors ${
               tab === t ? "bg-invert-900 text-white" : "bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -53,11 +59,11 @@ export default function AdminConsole() {
       </div>
 
       {tab === "overview" ? (
-        <Colleges list={colleges.data || []} counts={counts} />
+        <div role="tabpanel" tabIndex={0}><Colleges list={colleges.data || []} counts={counts} /></div>
       ) : (
-        <LearnerRoster />
+        <div role="tabpanel" tabIndex={0}><LearnerRoster /></div>
       )}
-    </div>
+    </div></div>
   );
 }
 

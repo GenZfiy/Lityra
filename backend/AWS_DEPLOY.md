@@ -1,6 +1,6 @@
 # LARE — End-to-End AWS Deployment
 
-Deploys the whole platform (26 services + gateway + React SPA) on **one EC2 box**
+Deploys the whole platform (31 services + gateway + React SPA) on **one EC2 box**
 behind Nginx, with **RDS PostgreSQL** and **Redis** on the box. No Docker — each
 service is a Gunicorn process under systemd (matches `deploy/lare@.service`).
 Scale later by moving Redis to ElastiCache and adding EC2 replicas behind an ALB.
@@ -9,7 +9,7 @@ Placeholders to replace: `LMS.EXAMPLE.EDU` (domain), `CHANGE_ME` (passwords/keys
 `ap-south-1` (region), `sg-xxx` (security groups).
 
 ```
-Internet ──443──> Nginx (EC2) ──/api──> Gateway :8000 ──127.0.0.1──> 26 services
+Internet ──443──> Nginx (EC2) ──/api──> Gateway :8000 ──127.0.0.1──> 31 services
                        └── / (static) ─> /opt/lare/frontend/dist
                                     services ──> RDS Postgres (:5432) + Redis (:6379)
 ```
@@ -41,7 +41,7 @@ Note the endpoint: `lare-db.xxxxx.ap-south-1.rds.amazonaws.com`.
 
 ## 2. EC2 instance
 
-- **Ubuntu Server 22.04 LTS**, `t3.large` (2 vCPU/8 GB is comfortable for 26
+- **Ubuntu Server 22.04 LTS**, `t3.large` (2 vCPU/8 GB is comfortable for 31
   services + build; `t3.medium` works for a light demo). 30 GB gp3 disk.
 - Same VPC/subnet as RDS. Security group `sg-ec2`:
   - Inbound **22** (SSH, your IP only), **80** and **443** (0.0.0.0/0).
@@ -266,7 +266,7 @@ rebuilds + publishes the SPA): `./redeploy.sh` (flags: `NO_PULL`, `DEPS=1`,
 `BACKEND_ONLY=1`, `FRONTEND_ONLY=1`, `WEB_ROOT`).
 
 **Low-RAM box: `vite build` gets `Killed`.** The build needs ~1–2 GB free; with
-all 26 services running it can OOM. Add swap once:
+all 31 services running it can OOM. Add swap once:
 ```bash
 sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile
 sudo mkswap /swapfile && sudo swapon /swapfile

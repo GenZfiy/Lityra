@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, KeyRound, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Card, Button, Field, Input } from "../components/ui/primitives.jsx";
-import { Logo } from "../components/ui/Logo.jsx";
+import { AuthLayout } from "./AuthLayout.jsx";
 import { api } from "../lib/api.js";
 
 // Two-step self-service reset: request a token by email, then set a new password.
@@ -45,14 +45,15 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-slate-50 px-4">
-      <div className="w-full max-w-md">
-        <div className="flex justify-center mb-6"><Logo size={104} /></div>
-        <Card className="p-8">
+    <AuthLayout
+      product={product}
+      title={step === "request" ? "Reset your password" : step === "reset" ? "Choose a new password" : "Password updated"}
+      subtitle={step === "request" ? "We'll email a secure reset link if the account can be recovered." : step === "reset" ? "Enter the token from your email to choose a new password." : "Your account is ready. Returning you to sign in."}
+      footer={<Link to={loginTo} className="font-semibold text-brand-600 hover:underline inline-flex items-center gap-1.5"><ArrowLeft size={14} /> Back to sign in</Link>}
+    >
+        <Card className="auth-reset-card p-6">
           {step === "request" && (
             <>
-              <h1 className="text-xl font-display font-bold text-ink-900 mb-1">Reset your password</h1>
-              <p className="text-sm text-slate-500 mb-6">We'll send a reset link to your email.</p>
               <form onSubmit={requestReset} className="space-y-4">
                 <Field label="Email">
                   <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
@@ -67,8 +68,6 @@ export default function ForgotPassword() {
 
           {step === "reset" && (
             <>
-              <h1 className="text-xl font-display font-bold text-ink-900 mb-1">Enter reset token</h1>
-              <p className="text-sm text-slate-500 mb-6">Paste the token from your email and choose a new password.</p>
               {devToken && (
                 <div className="mb-4 rounded-md bg-amber-500/10 text-amber-700 p-3 text-xs break-all">
                   Dev token: {devToken}
@@ -98,11 +97,7 @@ export default function ForgotPassword() {
             </div>
           )}
 
-          <Link to={loginTo} className="mt-6 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-ink-900">
-            <ArrowLeft size={14} /> Back to sign in
-          </Link>
         </Card>
-      </div>
-    </div>
+    </AuthLayout>
   );
 }

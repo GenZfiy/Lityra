@@ -1,6 +1,6 @@
 // Design-system primitives. All styling reads Tailwind tokens from
 // tailwind.config.js (which mirrors DESIGN.md). No ad-hoc hex here.
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 function cx(...c) {
   return c.filter(Boolean).join(" ");
@@ -30,8 +30,21 @@ export function Button({ variant = "primary", size = "md", className, as: As = "
 
 /* ---------- Card ---------- */
 export function Card({ className, children, ...p }) {
+  const reduceMotion = useReducedMotion();
+  const onPointerMove = (event) => {
+    if (reduceMotion || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const px = (event.clientX - rect.left) / rect.width;
+    const py = (event.clientY - rect.top) / rect.height;
+    event.currentTarget.style.setProperty("--depth-x", `${((0.5 - py) * 2.2).toFixed(2)}deg`);
+    event.currentTarget.style.setProperty("--depth-y", `${((px - 0.5) * 2.6).toFixed(2)}deg`);
+  };
+  const onPointerLeave = (event) => {
+    event.currentTarget.style.setProperty("--depth-x", "0deg");
+    event.currentTarget.style.setProperty("--depth-y", "0deg");
+  };
   return (
-    <div className={cx("bg-surface rounded-lg border border-slate-100 shadow-card", className)} {...p}>
+    <div className={cx("depth-card bg-surface rounded-lg border border-slate-100 shadow-card", className)} onPointerMove={onPointerMove} onPointerLeave={onPointerLeave} {...p}>
       {children}
     </div>
   );
@@ -90,6 +103,7 @@ export function Badge({ tone = "brand", className, children }) {
 
 /* ---------- XP bar (gamification) ---------- */
 export function XPBar({ value = 0, max = 100, label }) {
+  const reduceMotion = useReducedMotion();
   const pct = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
   return (
     <div>
@@ -104,9 +118,9 @@ export function XPBar({ value = 0, max = 100, label }) {
       <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
         <motion.div
           className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-400"
-          initial={{ width: 0 }}
+          initial={reduceMotion ? false : { width: 0 }}
           animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
+          transition={{ duration: reduceMotion ? 0 : 0.7, ease: "easeOut" }}
         />
       </div>
     </div>

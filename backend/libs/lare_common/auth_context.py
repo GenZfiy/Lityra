@@ -32,6 +32,7 @@ class Identity:
     # Concrete hierarchy slices the scope is exercised over.
     branch_ids: list[str] = field(default_factory=list)
     cohort_ids: list[str] = field(default_factory=list)
+    product: str | None = None
 
     def has_role(self, *roles: str) -> bool:
         return any(r in self.roles for r in roles)
@@ -168,6 +169,7 @@ def _from_headers() -> Identity | None:
         scope_level=request.headers.get("X-Scope-Level", "self"),
         branch_ids=branches,
         cohort_ids=cohorts,
+        product=request.headers.get("X-Product") or None,
     )
 
 
@@ -197,6 +199,7 @@ def _from_bearer() -> Identity | None:
         scope_level=claims.get("scope_level", "self"),
         branch_ids=claims.get("branch_ids", []),
         cohort_ids=claims.get("cohort_ids", []),
+        product=claims.get("product"),
     )
 
 

@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -9,7 +10,7 @@ import { PageHeader, Loading, EmptyState } from "../components/ui/states.jsx";
 import ProctorBanner from "../components/ProctorBanner.jsx";
 import { api } from "../lib/api.js";
 
-// LARE Learn — Embodied Practice Worlds. Work a realistic on-the-job scenario
+// Lityra Learn — Embodied Practice Worlds. Work a realistic on-the-job scenario
 // step by step; competence is scored from your decisions and fed to your twin.
 const DIFF = { easy: "teal", medium: "amber", hard: "rose" };
 
@@ -25,11 +26,11 @@ export default function PracticeWorlds() {
   }
   useEffect(() => { load(); }, []);
 
-  if (worlds === null) return <Loading />;
+  if (worlds === null) return <Loading label="Loading practice scenarios…" />;
   if (active) return <Player card={active} onExit={() => { setActive(null); load(); }} />;
 
   return (
-    <div>
+    <div className="page-composition page-composition-learning learner-screen-practice-worlds"><div>
       <PageHeader
         title="Practice Worlds"
         subtitle="Step into the real job — an on-call incident, a data investigation, a code review. Your decisions are scored like the workplace would, and feed your skill map."
@@ -39,7 +40,7 @@ export default function PracticeWorlds() {
       {worlds.length === 0 ? (
         <EmptyState title="No scenarios yet" hint="Your trainer hasn't published Practice Worlds. Check back soon." />
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="scenario-atlas grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {worlds.map((w) => (
             <button key={w.id} onClick={() => setActive(w)}
               className="text-left rounded-xl border border-slate-200 bg-surface p-5 hover:border-brand-300 hover:shadow-sm transition group">
@@ -58,7 +59,7 @@ export default function PracticeWorlds() {
           ))}
         </div>
       )}
-    </div>
+    </div></div>
   );
 }
 
@@ -116,7 +117,7 @@ function Player({ card, onExit }) {
     setStep(run._next); setChosen(null); setFeedback(null);
   }
 
-  if (!run && !summary) return <Loading />;
+  if (!run && !summary) return <Loading label="Loading practice scenarios…" />;
 
   const passed = summary && summary.passed;
 

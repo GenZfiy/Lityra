@@ -19,4 +19,5 @@ class Router:
         return None
 
     def is_public(self, path: str) -> bool:
-        return any(path.startswith(p) for p in self.cfg.PUBLIC_PREFIXES)
+        return (path in self.cfg.PUBLIC_PATHS
+                or any(path.startswith(p) for p in self.cfg.PUBLIC_PREFIXES))

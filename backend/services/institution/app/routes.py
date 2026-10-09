@@ -20,23 +20,23 @@ def _mint_grant(user_id: str, cohort_id: str) -> str:
          "iat": now, "exp": now + ACCESS_GRANT_TTL},
         secret, algorithm="HS256")
 
-from lare_common.auth_context import current_identity, current_scope, require_roles
-from lare_common.errors import BadRequest, Forbidden
+from lare_common.auth_context import current_identity, current_scope, require_permission, require_roles
+from lare_common.errors import BadRequest, Forbidden, NotFound
 from lare_common.responses import created, ok
 
 from .schemas import (
     AcademicYearIn, AccessCodeIn, AccessCodeStatusIn, AccessValidateIn, AssignmentIn,
-    BranchIn, CohortIn, CollegeIn, ConfigIn, ScheduleSlotIn,
+    BranchIn, CohortIn, CollegeIn, ConfigIn, ScheduleSlotIn, TrainingBatchIn,
+    TrainingCenterIn, TrainingParticipantIn, TrainingProgramIn,
 )
 from .service import InstitutionService
+from .models import TrainingBatch
 
 bp = Blueprint("institution", __name__)
 
 MANAGE = ("super_admin", "company_admin")
 MANAGE_COLLEGE = ("super_admin", "company_admin", "college_admin")
 READ = ("super_admin", "company_admin", "college_admin", "trainer")
-
-
 def _svc() -> InstitutionService:
     return current_app.extensions["svc"]
 
@@ -51,6 +51,145 @@ def _parse(model, payload):
     except ValidationError as e:
         raise BadRequest("Validation failed", code="validation_error",
                          details=e.errors(include_url=False)) from e
+
+
+def _check_training_center(s, center_id: str):
+    center = _svc().get_training_center(s, center_id)
+    identity = current_identity()
+    if center.tenant_id != identity.tenant_id:
+        raise Forbidden("Training center belongs to another tenant")
+    scope = current_scope()
+    if not scope.unrestricted and center_id not in scope.college_ids:
+        raise Forbidden("Outside your training center scope")
+    return center
+
+
+def _visible_training_program_ids(s, center_id: str):
+    """Translate existing LMS hierarchy scopes to center → program → batch."""
+    scope = current_scope()
+    if scope.unrestricted or scope.level == "college":
+        return None
+    if scope.level == "branch":
+        return set(scope.branch_ids or [])
+    if scope.level == "section":
+        allowed_batches = set(scope.cohort_ids or [])
+        return {batch.program_id for batch in _svc().list_training_batches(s, center_id)
+                if batch.id in allowed_batches}
+    return set()
+
+
+def _check_training_program_scope(s, center_id: str, program_id: str):
+    allowed = _visible_training_program_ids(s, center_id)
+    if allowed is not None and program_id not in allowed:
+        raise Forbidden("Outside your training program scope")
+
+
+def _check_training_batch_scope(batch):
+    scope = current_scope()
+    if scope.level == "branch" and batch.program_id not in (scope.branch_ids or []):
+        raise Forbidden("Outside your training program scope")
+    if scope.level == "section" and batch.id not in (scope.cohort_ids or []):
+        raise Forbidden("Outside your training batch scope")
+
+
+# ---------- training-center network ----------
+@bp.post("/lms/v1/training-centers")
+@require_roles(*MANAGE)
+def create_training_center():
+    data = _parse(TrainingCenterIn, request.get_json(silent=True))
+    with _db().session() as s:
+        center = _svc().create_training_center(s, data, current_identity().tenant_id)
+        return created(_svc().training_center_out(center))
+
+
+@bp.get("/lms/v1/training-centers")
+@require_permission("training.center.view")
+def list_training_centers():
+    identity = current_identity()
+    scope = current_scope()
+    with _db().session() as s:
+        rows = _svc().list_training_centers(s, scope, identity.tenant_id)
+        return ok([_svc().training_center_out(center) for center in rows])
+
+
+@bp.post("/lms/v1/training-centers/<center_id>/programs")
+@require_permission("training.program.manage")
+def create_training_program(center_id):
+    data = _parse(TrainingProgramIn, request.get_json(silent=True))
+    with _db().session() as s:
+        _check_training_center(s, center_id)
+        if current_scope().level not in ("platform", "college"):
+            raise Forbidden("Only center leadership can create programs")
+        program = _svc().create_training_program(s, center_id, data)
+        return created(_svc().training_program_out(program))
+
+
+@bp.get("/lms/v1/training-centers/<center_id>/programs")
+@require_permission("training.program.view")
+def list_training_programs(center_id):
+    with _db().session() as s:
+        _check_training_center(s, center_id)
+        programs = _svc().list_training_programs(s, center_id)
+        allowed = _visible_training_program_ids(s, center_id)
+        if allowed is not None:
+            programs = [program for program in programs if program.id in allowed]
+        return ok([_svc().training_program_out(program) for program in programs])
+
+
+@bp.post("/lms/v1/training-centers/<center_id>/batches")
+@require_permission("training.batch.manage")
+def create_training_batch(center_id):
+    data = _parse(TrainingBatchIn, request.get_json(silent=True))
+    with _db().session() as s:
+        _check_training_center(s, center_id)
+        if current_scope().level == "section":
+            raise Forbidden("Trainers can view and manage participants in assigned batches only")
+        _check_training_program_scope(s, center_id, data.program_id)
+        batch = _svc().create_training_batch(s, center_id, data)
+        return created(_svc().training_batch_out(batch))
+
+
+@bp.get("/lms/v1/training-centers/<center_id>/batches")
+@require_permission("training.batch.view")
+def list_training_batches(center_id):
+    with _db().session() as s:
+        _check_training_center(s, center_id)
+        batches = _svc().list_training_batches(s, center_id)
+        allowed_programs = _visible_training_program_ids(s, center_id)
+        if current_scope().level == "section":
+            batches = [batch for batch in batches if batch.id in (current_scope().cohort_ids or [])]
+        elif allowed_programs is not None:
+            batches = [batch for batch in batches if batch.program_id in allowed_programs]
+        return ok([_svc().training_batch_out(batch) for batch in batches])
+
+
+@bp.post("/lms/v1/training-batches/<batch_id>/participants")
+@require_permission("training.participant.manage")
+def add_training_participant(batch_id):
+    data = _parse(TrainingParticipantIn, request.get_json(silent=True))
+    with _db().session() as s:
+        batch = s.get(TrainingBatch, batch_id)
+        if not batch:
+            raise NotFound("Training batch not found", code="training_batch_not_found")
+        _check_training_center(s, batch.center_id)
+        _check_training_batch_scope(batch)
+        if current_scope().level == "section":
+            raise Forbidden("Trainers cannot enroll participants")
+        participant = _svc().add_training_participant(s, batch_id, data)
+        return created(_svc().training_participant_out(participant))
+
+
+@bp.get("/lms/v1/training-batches/<batch_id>/participants")
+@require_permission("training.participant.view")
+def list_training_participants(batch_id):
+    with _db().session() as s:
+        batch = s.get(TrainingBatch, batch_id)
+        if not batch:
+            raise NotFound("Training batch not found", code="training_batch_not_found")
+        _check_training_center(s, batch.center_id)
+        _check_training_batch_scope(batch)
+        people = _svc().list_training_participants(s, batch_id)
+        return ok([_svc().training_participant_out(person) for person in people])
 
 
 # ---------- colleges ----------

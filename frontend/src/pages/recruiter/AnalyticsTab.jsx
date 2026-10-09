@@ -5,6 +5,7 @@ import { Loading } from "../../components/ui/states.jsx";
 import { api, withFallback } from "../../lib/api.js";
 import { band, bandHex, initials, hueFor } from "../../components/drive/grammar.jsx";
 import { RadialGauge, Funnel, AreaChart, Donut } from "../../components/charts.jsx";
+import "../../styles/recruiter-operations-pages.css";
 
 // World-class drive analytics — a real recruitment intelligence dashboard.
 // Everything derives from live data (analytics + funnel + registrations); no mocks.
@@ -15,16 +16,18 @@ export default function AnalyticsTab({ id }) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState("");
+  const [sources, setSources] = useState({ funnel: true, registrations: true });
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [an, fn, rg] = await Promise.all([
+      const [an, fnResult, rgResult] = await Promise.all([
         api.driveAnalytics(id).catch(() => null),
-        withFallback(api.funnel(id), { total: 0, by_status: {} }).then((r) => r.data ?? r).catch(() => ({ total: 0, by_status: {} })),
-        withFallback(api.driveRegistrations(id), []).then((r) => r.data ?? r).catch(() => []),
+        withFallback(api.funnel(id), null),
+        withFallback(api.driveRegistrations(id), []),
       ]);
-      setA(an); setF(fn || { total: 0, by_status: {} }); setRegs(Array.isArray(rg) ? rg : []);
+      setA(an); setF(fnResult.live ? fnResult.data : null); setRegs(rgResult.live && Array.isArray(rgResult.data) ? rgResult.data : []);
+      setSources({ funnel: fnResult.live, registrations: rgResult.live });
       if (!an) setErr("Written-test analytics aren't available yet.");
       setLoading(false);
     })();
@@ -42,21 +45,22 @@ export default function AnalyticsTab({ id }) {
   const w = a?.written || {};
   const c = a?.coding || {};
   const bs = f?.by_status || {};
-  const total = a?.total_registered ?? f?.total ?? regs.length ?? 0;
+  const total = a?.total_registered ?? f?.total ?? (sources.registrations ? regs.length : null);
+  const totalValue = total ?? 0;
 
-  const inFlight = (bs.shortlisted || 0) + (bs.in_round || 0);
-  const selected = bs.selected || 0;
-  const rejected = bs.rejected || 0;
-  const screening = bs.applied || 0;
-  const attRate = total ? Math.round((w.attended || 0) / total * 100) : 0;
-  const selRate = total ? Math.round(selected / total * 100) : 0;
+  const inFlight = f ? (bs.shortlisted || 0) + (bs.in_round || 0) : null;
+  const selected = f ? (bs.selected || 0) : null;
+  const rejected = f ? (bs.rejected || 0) : null;
+  const screening = f ? (bs.applied || 0) : null;
+  const attRate = total ? Math.round((w.attended || 0) / total * 100) : null;
+  const selRate = total && selected != null ? Math.round(selected / total * 100) : null;
 
   const funnel = [
-    { label: "Registered", value: total, color: "#3B82F6" },
+    { label: "Registered", value: total ?? 0, color: "#3B82F6" },
     { label: "Attended test", value: w.attended ?? 0, color: "#2563EB" },
     { label: "Cleared written", value: w.cleared ?? 0, color: "#1D4ED8" },
-    { label: "In rounds", value: inFlight + selected, color: "#0D9488" },
-    { label: "Selected", value: selected, color: "#0F766E" },
+    { label: "In rounds", value: (inFlight ?? 0) + (selected ?? 0), color: "#0D9488" },
+    { label: "Selected", value: selected ?? 0, color: "#0F766E" },
   ];
 
   const dist = (w.score_distribution || []).map((b) => ({ label: (b.band || "").replace(/\s|%/g, ""), value: b.count }));
@@ -72,16 +76,17 @@ export default function AnalyticsTab({ id }) {
   const scored = regs.filter((r) => r.score != null).length;
 
   const outcome = [
-    { label: "Selected", n: selected, color: "#0D9488" },
-    { label: "In flight", n: inFlight, color: "#F59E0B" },
-    { label: "Screening", n: screening, color: "#64748b" },
-    { label: "Rejected", n: rejected, color: "#E11D48" },
+    { label: "Selected", n: selected ?? 0, color: "#0D9488" },
+    { label: "In flight", n: inFlight ?? 0, color: "#F59E0B" },
+    { label: "Screening", n: screening ?? 0, color: "#64748b" },
+    { label: "Rejected", n: rejected ?? 0, color: "#E11D48" },
   ].filter((x) => x.n > 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section className="page-composition page-composition-recruiter-detail hire-ops hire-ops--analytics"><div className="space-y-6">
+      <header className="hire-ops-intro hire-analytics-lead">
         <div>
+          <span className="hire-ops-kicker">Evidence · outcomes · movement</span>
           <h2 className="font-display font-semibold text-lg text-ink-900">Drive analytics</h2>
           <p className="text-sm text-slate-500">Recruitment intelligence — funnel, performance &amp; pipeline, from live data.</p>
         </div>
@@ -89,12 +94,13 @@ export default function AnalyticsTab({ id }) {
           <Button variant="secondary" onClick={() => download(false)} disabled={!!busy}><Download size={16} /> {busy === "all" ? "Preparing…" : "Attendees (Excel)"}</Button>
           <Button onClick={() => download(true)} disabled={!!busy}><Download size={16} /> {busy === "cleared" ? "Preparing…" : "Cleared (Excel)"}</Button>
         </div>
-      </div>
+      </header>
 
       {err && <div className="rounded-md bg-amber-500/10 text-amber-700 p-3 text-sm">{err}</div>}
 
-      {/* Headline band — hero number + performance rings */}
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-brand-500/[0.05] via-surface to-teal-500/[0.04] p-6">
+      {/* Conversion story paired with the funnel it describes. */}
+      <div className="hire-analytics-story">
+      <section className="hire-analytics-outcome rounded-2xl border border-slate-200 bg-gradient-to-br from-brand-500/[0.05] via-surface to-teal-500/[0.04] p-6" aria-label="Selection outcome summary">
         <div className="grid lg:grid-cols-[1.1fr_2fr] gap-6 items-center">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Selection outcome</div>
@@ -115,17 +121,18 @@ export default function AnalyticsTab({ id }) {
             <div className="text-center"><RadialGauge value={selRate} label="Selection" color="#F59E0B" /></div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Funnel — the centerpiece */}
-      <Card className="p-6">
-        <h3 className="font-display font-semibold text-ink-900 mb-1 flex items-center gap-2"><Filter size={18} className="text-brand-500" /> Recruitment funnel</h3>
+      <Card className="hire-analytics-funnel p-6">
+        <div className="hire-analytics-panel-heading"><span className="hire-ops-kicker">Movement</span><h3 className="font-display font-semibold text-ink-900"><Filter size={18} className="text-brand-500" /> Recruitment funnel</h3></div>
         <p className="text-xs text-slate-400 mb-5">How the pool narrows at each stage · stage-to-stage conversion on the right</p>
         <Funnel stages={funnel} />
       </Card>
+      </div>
 
       {/* Distribution + occupancy */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="hire-analytics-report-grid">
+      <section className="hire-analytics-trends grid lg:grid-cols-2 gap-6" aria-label="Score and pipeline trends">
         <Card className="p-6">
           <h3 className="font-display font-semibold text-ink-900 mb-1 flex items-center gap-2"><BarChart3 size={18} className="text-brand-500" /> Score distribution</h3>
           <p className="text-xs text-slate-400 mb-3">Written test · average {w.avg_percentage ?? 0}%</p>
@@ -136,10 +143,10 @@ export default function AnalyticsTab({ id }) {
           <p className="text-xs text-slate-400 mb-3">Where candidates sit right now</p>
           {rounds.length ? <AreaChart data={rounds} color="#0D9488" /> : <p className="text-sm text-slate-400 py-8 text-center">No candidates yet.</p>}
         </Card>
-      </div>
+      </section>
 
       {/* Composition donuts */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <section className="hire-analytics-composition grid lg:grid-cols-2 gap-6" aria-label="Eligibility and outcome composition">
         <Card className="p-6">
           <h3 className="font-display font-semibold text-ink-900 mb-4 flex items-center gap-2"><Target size={18} className="text-brand-500" /> Outcome mix</h3>
           {outcome.length ? <Donut parts={outcome} centerValue={total} centerLabel="candidates" /> : <p className="text-sm text-slate-400">No data yet.</p>}
@@ -152,10 +159,10 @@ export default function AnalyticsTab({ id }) {
             { label: "Unscreened", n: elig.unknown, color: "#64748b" },
           ].filter((x) => x.n > 0)} />
         </Card>
-      </div>
+      </section>
 
       {/* Leaderboard + coding */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <section className="hire-analytics-performance grid lg:grid-cols-2 gap-6" aria-label="Candidate and coding performance">
         <Card className="p-6">
           <h3 className="font-display font-semibold text-ink-900 mb-1 flex items-center gap-2"><Trophy size={18} className="text-amber-500" /> Top performers</h3>
           <p className="text-xs text-slate-400 mb-4">By real marks · {scored} of {total} scored</p>
@@ -194,7 +201,8 @@ export default function AnalyticsTab({ id }) {
             </div>
           ) : <p className="text-sm text-slate-400">No coding questions in this drive's written test.</p>}
         </Card>
+      </section>
       </div>
-    </div>
+    </div></section>
   );
 }

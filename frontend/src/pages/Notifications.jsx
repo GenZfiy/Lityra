@@ -1,3 +1,4 @@
+import "../styles/learner-candidate-pages.css";
 import { useState } from "react";
 import { Bell, Trophy, FileCheck2, Award, Check } from "lucide-react";
 import { Card, Badge, Button } from "../components/ui/primitives.jsx";
@@ -21,7 +22,7 @@ export default function Notifications() {
   const [items, setItems] = useState(null);
   const list = items ?? feed.data ?? [];
 
-  if (feed.loading) return <Loading />;
+  if (feed.loading) return <Loading label="Loading notifications…" />;
 
   async function markRead(id) {
     setItems(list.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -35,7 +36,7 @@ export default function Notifications() {
   const unread = list.filter((n) => !n.read).length;
 
   return (
-    <div className="max-w-2xl">
+    <div className="page-composition page-composition-account learner-screen-notifications"><div className="max-w-2xl">
       <PageHeader
         title="Notifications"
         subtitle={unread ? `${unread} unread` : "You're all caught up"}
@@ -44,7 +45,7 @@ export default function Notifications() {
       {list.length === 0 ? (
         <EmptyState title="No notifications" hint="Updates about your learning and drives appear here." />
       ) : (
-        <div className="space-y-2">
+        <div className="notification-inbox-feed space-y-2" aria-label="Notification inbox">
           {list.map((n) => {
             const Icon = ICON[n.template_key] || Bell;
             return (
@@ -73,6 +74,6 @@ export default function Notifications() {
           })}
         </div>
       )}
-    </div>
+    </div></div>
   );
 }
