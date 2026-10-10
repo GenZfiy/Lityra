@@ -1,5 +1,7 @@
 # Lityra — AWS Production Deployment Runbook
 
+For Render + Netlify, see [Render and Netlify deployment](#render--netlify-deployment).
+
 This is the Lityra-specific version of the CEO's generic AWS guide. It deploys the
 **real** platform: the API **gateway + 31 Flask microservices**, the **React/Vite
 SPA**, **Redis**, and **Amazon RDS PostgreSQL** (schema-per-service) — two products
@@ -106,7 +108,7 @@ and load them at boot instead of a plaintext file (see Phase 10).
 ## Phase 7 — Build & launch the whole stack
 ```bash
 docker compose -f deploy/docker-compose.yml up -d --build
-docker compose -f deploy/docker-compose.yml logs -f backend   # watch init-db + 27 starts
+docker compose -f deploy/docker-compose.yml logs -f backend   # watch init-db + 32 starts
 ```
 Verify:
 ```bash
@@ -191,3 +193,66 @@ docker compose -f deploy/docker-compose.yml up -d --force-recreate backend
 | Auto Scaling Group | Single larger EC2 (event bus is localhost-bound) |
 | db.t4g.micro | db.t4g.small+ (connection-pool math) |
 | `.env` on disk | Secrets Manager (Phase 10) + rotate exposed keys |
+
+---
+
+## Render + Netlify deployment
+
+This backend image runs the gateway and all 31 domain services as 32 processes in
+one Render Web Service. Deploy the Vite frontend separately on Netlify. Render Free
+is only suitable for development/demo attempts here: the service has not been
+resource-tested on Render, while Free provides 512 MB RAM and 0.1 CPU. Free services
+sleep after 15 minutes idle, cold-start on a later request, and have ephemeral local
+storage. See [Render Free](https://render.com/docs/free) and
+[Render compute plans](https://render.com/docs/compute-plans).
+
+### Render Web Service
+
+1. Create **New → Web Service**, connect the GitHub repository, and choose **Docker**.
+2. Set Dockerfile path to `deploy/Dockerfile` and build context to the repository root.
+   Leave the start command empty so the image entrypoint starts Supervisor.
+3. Set health check path to `/health`. The gateway binds to `0.0.0.0:$PORT`; Render's
+   default is `10000`. Leave `PORT` unset or set it to `10000`.
+4. Add the values from root `.env.example` in Render's Environment settings. Use the
+   Supabase **Session pooler** connection string on port `5432`; URL-encode special
+   characters in its password. Set `CORS_ORIGINS` to exact Netlify origin(s).
+5. For the existing initialized database, use `SKIP_INIT=1` after verifying all 31
+   schemas exist. On a fresh DB or schema migration, set `SKIP_INIT=0` only during a
+   controlled bootstrap: sequential init took about five minutes in the supplied logs
+   and can exceed deployment startup limits. Restore `SKIP_INIT=1` after it succeeds.
+6. Keep `EXEC_ENABLED=false` until a supported OS sandbox is installed and validated.
+   Local uploads are temporary on Free; the files service currently uses local storage.
+   Free also blocks outbound SMTP on ports 25, 465, and 587, so use a supported mail API.
+7. Store database, JWT, internal JWT, AI, and email credentials in Render's secret
+   environment values. Rotate credentials exposed in chat/logs. Never commit `.env` or
+   place backend secrets in Netlify.
+8. After deployment, inspect logs for `[gateway] binding host=0.0.0.0 port=10000` and
+   verify `/health`. Use `/ready` as a diagnostic for all 31 upstreams. A local
+   change is not deployed until committed, pushed, and shown as the live commit in Render.
+9. `init-db` creates the permission catalog but does not create a super-admin account.
+   Existing accounts stay in the database. For a new database, run the auth service's
+   explicit `manage.py seed` once from a trusted environment with `SEED_ADMIN_EMAIL`
+   and `SEED_ADMIN_PASSWORD` set. Do not store those bootstrap values permanently in
+   the web service environment. Render Free has no shell access or one-off jobs.
+
+### Netlify frontend
+
+1. Create a Netlify site from the repository with base directory `frontend`.
+2. Build command: `npm run build`; publish directory: `dist`.
+3. Set `VITE_API_BASE_URL` to the Render backend's public HTTPS URL. Add that Netlify
+   site origin to backend CORS.
+4. Verify login, `/api/auth/v1/me`, `/api/auth/v1/refresh`, and an LMS endpoint. Check
+   browser Network/Console for CORS failures and confirm no backend secrets are in the
+   frontend bundle.
+
+### Free-tier constraints
+
+- 32 processes sharing 512 MB / 0.1 CPU have not been validated; measure resource use
+  and upgrade or redesign if the service restarts or fails readiness.
+- Free services sleep while idle. They do not provide dependable always-on background
+  processing or fast first requests.
+- The current files service uses local storage, which is ephemeral on Free. Durable
+  uploads require an implemented and configured object-storage backend.
+- Do not enable public code execution without an isolated sandbox. Production rejects
+  subprocess execution, and this image does not install `nsjail` or `bwrap`.
+- Provider limits can change; recheck the linked official Render docs before launch.

@@ -1,4 +1,4 @@
-# LARE backend — single image that runs the gateway + all 26 services under
+# LARE backend — single image that runs the gateway + all 31 services under
 # supervisord, mirroring run-all.ps1. Build context is the REPO ROOT so we can
 # copy both backend/ and the shared lare_common library.
 #
@@ -8,9 +8,10 @@ FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PORT=10000
 
-# supervisor runs the 27 processes; curl is used by the healthcheck.
+# supervisor runs the 32 processes; curl is used by the healthcheck.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends supervisor curl \
     && rm -rf /var/lib/apt/lists/*
@@ -35,9 +36,9 @@ COPY backend/services.txt /app/backend/services.txt
 COPY deploy/entrypoint.sh /app/deploy/entrypoint.sh
 RUN chmod +x /app/deploy/entrypoint.sh
 
-EXPOSE 8000
+EXPOSE 10000
 # Gateway health is the whole-stack liveness signal.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-    CMD curl -fsS http://127.0.0.1:8000/health || exit 1
+    CMD curl -fsS "http://127.0.0.1:${PORT:-10000}/health" || exit 1
 
 ENTRYPOINT ["/app/deploy/entrypoint.sh"]

@@ -1,5 +1,5 @@
 # LARE production stack for a single EC2 instance.
-#   backend  — gateway + 26 services (one image, supervisord)
+#   backend  — gateway + 31 services (one image, supervisord)
 #   web      — nginx: serves the SPA and proxies /api -> backend:8000
 #   redis    — event bus + rate limiting + sessions (local; swap for ElastiCache)
 #
@@ -18,6 +18,8 @@ services:
       REDIS_URL: redis://redis:6379/0
       EVENT_BUS_BACKEND: auto
       APP_ENV: production
+      # Keep the local nginx proxy and backend container on the same port.
+      PORT: 8000
     volumes:
       # RS256 JWT keypair — mount, never bake into the image.
       - ./keys:/app/backend/keys:ro

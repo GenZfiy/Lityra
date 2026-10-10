@@ -2,6 +2,8 @@
 context, rate-limit, and reverse-proxy to the resolved upstream service."""
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import jwt
 import requests
 from flask import Flask, g, jsonify, request
@@ -41,14 +43,23 @@ def build_app() -> Flask:
 
     @app.get("/ready")
     def ready():
-        # Aggregate upstream readiness (best-effort, short timeout).
+        # Check upstreams concurrently so latency does not multiply by the
+        # number of services behind the gateway.
         results = {}
-        for key, base in cfg.UPSTREAMS.items():
+
+        def check_upstream(key, base):
             try:
                 r = requests.get(base.rstrip("/") + "/health", timeout=1.5)
-                results[key] = r.ok
+                return key, r.ok
             except requests.RequestException:
-                results[key] = False
+                return key, False
+
+        with ThreadPoolExecutor(max_workers=min(32, max(1, len(cfg.UPSTREAMS)))) as pool:
+            checks = [pool.submit(check_upstream, key, base)
+                      for key, base in cfg.UPSTREAMS.items()]
+            for check in as_completed(checks):
+                key, is_ready = check.result()
+                results[key] = is_ready
         ready = all(results.values())
         return jsonify({"service": cfg.SERVICE_NAME,
                         "status": "ready" if ready else "unready",

@@ -1,6 +1,6 @@
 # Consolidated runtime deps for the single production backend image.
 # Superset of backend/requirements-base.txt + every service's extras, so one
-# image can run all 27 processes (gateway + 26 services) exactly like run-all.ps1.
+# image can run all 32 processes (gateway + 31 services) exactly like run-all.ps1.
 Flask==3.1.0
 SQLAlchemy==2.0.36
 alembic==1.14.0

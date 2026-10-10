@@ -233,8 +233,15 @@ def seed(db, cfg: AuthConfig, *, create_admin: bool = True) -> None:
 
         if create_admin:
             # --- optional initial super admin; init-db syncs the catalog only ---
-            admin_email = os.getenv("SEED_ADMIN_EMAIL", "admin@lareitcloudsolutions.com").lower()
-            admin_pw = os.getenv("SEED_ADMIN_PASSWORD", "ChangeMe#123")
+            admin_email = os.getenv("SEED_ADMIN_EMAIL")
+            admin_pw = os.getenv("SEED_ADMIN_PASSWORD")
+            if getattr(cfg, "ENV", "development") == "production" and not (admin_email and admin_pw):
+                raise RuntimeError(
+                    "Production admin seeding requires SEED_ADMIN_EMAIL and "
+                    "SEED_ADMIN_PASSWORD to be set explicitly"
+                )
+            admin_email = (admin_email or "admin@lareitcloudsolutions.com").lower()
+            admin_pw = admin_pw or "ChangeMe#123"
             admin = s.execute(select(User).where(User.email == admin_email)).scalar_one_or_none()
             if not admin:
                 admin = User(

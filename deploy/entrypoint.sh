@@ -19,7 +19,12 @@ schema_for() {
   if [[ "$reserved" == *" $name "* ]]; then echo "lare_${name}"; else echo "$name"; fi
 }
 
-echo "[entrypoint] DATABASE_URL host: $(echo "${DATABASE_URL:-unset}" | sed -E 's#://[^@]*@#://***@#')"
+if [[ -n "${DATABASE_URL:-}" ]]; then
+  echo "[entrypoint] database URL configured"
+else
+  echo "[entrypoint] ERROR: DATABASE_URL is not configured" >&2
+  exit 1
+fi
 
 # ---- 1. init-db for every service (idempotent; creates schema + tables) ------
 if [[ "${SKIP_INIT:-0}" != "1" ]]; then
@@ -33,13 +38,15 @@ if [[ "${SKIP_INIT:-0}" != "1" ]]; then
          python manage.py init-db ) \
       || { echo "[entrypoint] ERROR: init-db failed for $name" >&2; exit 1; }
   done < <(tr -d '\r' < "$REGISTRY")
-fi
 
-# Old certificate verification URLs used a short, enumerable code. Rotate them
-# before services start; this intentionally invalidates previously shared links.
-( cd "$ROOT/services/certification" \
-  && DB_SCHEMA="$(schema_for certification)" SERVICE_NAME=certification \
-     python manage.py migrate-verify-ids )
+  # Old certificate verification URLs used a short, enumerable code. Rotate
+  # them only as part of an explicit schema initialization/migration pass.
+  ( cd "$ROOT/services/certification" \
+    && DB_SCHEMA="$(schema_for certification)" SERVICE_NAME=certification \
+       python manage.py migrate-verify-ids )
+else
+  echo "[entrypoint] SKIP_INIT=1; skipping schema initialization and migrations"
+fi
 
 # ---- 2. generate one supervisord [program] per service -----------------------
 mkdir -p /etc/supervisor /var/log/lare
@@ -66,7 +73,7 @@ while read -r name dir port; do
   if [[ "$name" != "gateway" ]]; then
     extra_env=",DB_SCHEMA=\"$(schema_for "$name")\""
   else
-    port="${PORT:-$port}"
+    port="${PORT:-10000}"
     extra_env=',HOST="0.0.0.0"'
   fi
   cat >> "$CONF" <<PROG
