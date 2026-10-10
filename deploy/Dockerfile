@@ -9,7 +9,10 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PORT=10000
+    PORT=10000 \
+    WEB_THREADS=1 \
+    WEB_CONNECTION_LIMIT=100 \
+    MALLOC_ARENA_MAX=2
 
 # supervisor runs the 32 processes; curl is used by the healthcheck.
 RUN apt-get update \

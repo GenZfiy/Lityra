@@ -213,6 +213,8 @@ storage. See [Render Free](https://render.com/docs/free) and
    Leave the start command empty so the image entrypoint starts Supervisor.
 3. Set health check path to `/health`. The gateway binds to `0.0.0.0:$PORT`; Render's
    default is `10000`. Leave `PORT` unset or set it to `10000`.
+   The image defaults each process to one Waitress thread and caps queued connections
+   to reduce memory use; this limits per-service concurrency.
 4. Add the values from root `.env.example` in Render's Environment settings. Use the
    Supabase **Session pooler** connection string on port `5432`; URL-encode special
    characters in its password. Set `CORS_ORIGINS` to exact Netlify origin(s).

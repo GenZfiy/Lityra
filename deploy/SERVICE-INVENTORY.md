@@ -46,7 +46,7 @@ gateway is intended to receive public traffic.
 - `services.txt` defines 31 domain processes on ports `8001–8031` plus the gateway on `8000`.
 - The Render deployment image contains all 32 processes under Supervisor. Domain services are intended to bind to loopback; the gateway binds publicly.
 - Each process uses the shared `lare_common` package and generally creates its own SQLAlchemy engine. The image uses one pool per service; set `DB_POOL_SIZE=1` and `DB_MAX_OVERFLOW=0` for the Supabase shared session pooler.
-- Default `WEB_THREADS=16` applies per process. A Render trial should reduce this to `1`; this does not make 32 Python processes fit in Free memory by itself.
+- The source server default is 16 threads per process. The Render Docker image now sets `WEB_THREADS=1`, `WEB_CONNECTION_LIMIT=100`, and `MALLOC_ARENA_MAX=2` to reduce per-process overhead. This is a memory mitigation only; it does not prove 32 Python processes fit in Free memory.
 - All 31 schemas are initialized sequentially at container startup unless `SKIP_INIT=1`. The supplied Render startup log shows these steps took roughly five minutes. Use `SKIP_INIT=1` only after verifying the schemas were initialized; the log in the deployment report showed each init succeeded.
 - `files` uses local filesystem storage. Render Free filesystems are ephemeral, so uploads do not have durable storage there.
 - `coding` executes untrusted source code and requires a verified OS sandbox in production. The current Dockerfile does not install `bubblewrap` or `nsjail`; disable code execution on this image until a sandbox is available and tested.
